@@ -16,7 +16,7 @@
 
 ## 주요 기능
 
-- **감정 인식 대화**: Gemini가 친구 같은 말투로 대화하고, CLIP이 메시지(또는 첨부 사진)의 감정을 분석해 답변 톤을 조절합니다. 대화 내용은 저장하지 않고 감정 수치만 기록합니다.
+- **감정 인식 대화**: Gemini가 친구 같은 말투로 대화하고, 직접 학습한 감정 분류 모델이 메시지의 감정을 분석해 답변 톤을 조절합니다. 대화 내용은 저장하지 않고 감정 수치만 기록합니다.
 - **Function Calling 도구 9개**: 일정 조회·등록(겹침 감지), 리마인더 조회·등록, 노트 저장·삭제, 네이버 웹 검색, 구글 검색, 유튜브 검색
 - **선제 알림**: 1분마다 임박한 일정·리마인더를 확인해 Lumi가 먼저 말을 겁니다.
 - **음성 대화**: 브라우저 음성 인식(STT)과 Fish Audio 음성 출력(TTS). 실패하면 브라우저 음성합성으로 자동 대체합니다.
@@ -33,10 +33,19 @@ flowchart LR
     Sched["Scheduler"] --> Svc
     Svc --> DB[("MySQL")]
     Svc --> Gemini["Gemini API"]
-    Svc --> Clip["CLIP 감정분석 서버<br/>(FastAPI, 8000)"]
+    Svc --> Emo["감정분석 서버<br/>(직접 학습한 모델, FastAPI 8002)"]
     Svc --> Search["NAVER · Google · YouTube"]
     Svc --> Tts["Fish Audio TTS"]
 ```
+
+## 감정 분석 모델
+
+- **학습 데이터**: 공개 한국어 감정 데이터 KOTE(온라인 댓글 5만 건, 정서 44종, MIT 라이선스)
+- **모델**: multilingual-e5-small 문장 인코더 위에 MLP 분류기를 붙여 한 문장의 여러 정서를 동시에 예측(multi-label)
+- **출력**: 감정 이름, 기분(mood), 긍정도(valence), 활성도(arousal), 확신도 → Lumi의 답변 톤 정책에 사용
+- **평가 방식**: 검증셋으로 설정을 고르고, 테스트셋은 설정당 한 번만 엽니다. Lumi 대화체 점검 문장 80개는 학습에 쓰지 않고 결과만 확인합니다.
+- **개인정보**: 서버는 받은 문장을 저장하거나 로그에 남기지 않습니다. 서버가 꺼져 있으면 감정 배지와 톤 조절만 빠지고 대화는 정상 동작합니다.
+- 사진 표정 분석은 선택 기능이며 기본으로 꺼져 있습니다.
 
 ## 기술 스택
 
@@ -45,7 +54,7 @@ flowchart LR
 | 백엔드 | Java 21, Spring Boot 4, Spring Security, Spring Data JPA, Gradle |
 | 프론트엔드 | React 19, Vite, Three.js (3D 뉴런 코어) |
 | 데이터베이스 | MySQL |
-| AI | Gemini API(대화·Function Calling), CLIP ViT-B/32(감정 분석, Python FastAPI) |
+| AI | Gemini API(대화·Function Calling), 직접 학습한 감정 분류 모델(multilingual-e5-small + KOTE 공개 데이터, Python FastAPI) |
 | 외부 서비스 | NAVER 검색, Google 검색, YouTube Data API, Fish Audio TTS, Google OAuth2 |
 
 ## 실행 방법
@@ -53,7 +62,7 @@ flowchart LR
 ### 1. 준비물
 
 - JDK 21, Node.js, MySQL
-- (선택) 감정 분석을 쓰려면 CLIP 서버(Python)가 필요합니다. 없으면 감정 분석만 건너뜁니다.
+- (선택) 감정 분석을 쓰려면 감정 분석 서버(`emotion-classifier`, Python)가 필요합니다. 설치와 학습 방법은 `emotion-classifier/README.md`를 참고하세요. 없으면 감정 분석만 건너뜁니다.
 
 ### 2. 데이터베이스
 
@@ -76,7 +85,7 @@ CREATE DATABASE lumi_database CHARACTER SET utf8mb4;
 | `FISH_API_KEY` | 선택 | Fish Audio TTS (없으면 브라우저 음성합성 사용) |
 | `FISH_AUDIO_MODEL` | 선택 | 기본값 `s2.1-pro-free` |
 | `FISH_AUDIO_VOICE_KO_MALE`, `..._KO_FEMALE`, `..._EN_MALE`, `..._EN_FEMALE` | 선택 | 언어·성별별 목소리 ID |
-| `CLIP_SERVER_URL` | 선택 | 기본값 `http://localhost:8000` |
+| `EMOTION_SERVER_BASE_URL` | 선택 | 감정 분석 서버 주소. 기본값 `http://localhost:8002` |
 | 구글 OAuth 클라이언트 ID/시크릿 | 선택 | 구글 로그인용. `application.properties`의 해당 항목 이름을 확인해 같은 방식으로 설정 |
 
 ### 4. 실행
@@ -93,7 +102,7 @@ npm run dev
 
 - 정적 화면: http://localhost:8081
 - React 화면: http://localhost:5173
-- 시작할 때 `StartupDiagnostics`가 각 키 설정 여부와 CLIP 서버 연결 상태를 콘솔에 요약해 줍니다.
+- 시작할 때 `StartupDiagnostics`가 각 키 설정 여부와 감정 분석 서버 연결 상태를 콘솔에 요약해 줍니다.
 
 ## API 목록
 
@@ -142,14 +151,15 @@ Lumi/
 ├─ src/main/resources/
 │  ├─ static/       정적 화면(HTML/CSS/JS)
 │  └─ templates/    로그인·회원가입 화면
-└─ lumi-frontend/   React 프론트엔드
+├─ lumi-frontend/   React 프론트엔드
+└─ emotion-classifier/  감정 분류 모델 학습·서버 (Python)
 ```
 
 ## 개발 로드맵
 
 | 시기 | 내용 |
 | --- | --- |
-| 10월 | 배포, HTTPS, 민감 컬럼 암호화 |
+| 10월 | 감정 분석 모델 직접 학습·평가, 배포, HTTPS, 민감 컬럼 암호화 |
 | 11월 초 | 실사용자 테스트(10명 이상), 만족도 설문(10문항 이상), 보안 수동 점검 |
 | 11/16 | 코드 프리즈 |
 | 11/18 | 중간발표 |
@@ -158,11 +168,12 @@ Lumi/
 
 ## 한계
 
-- 감정 분석은 텍스트·사진을 바탕으로 한 참고용 추정이며, 의학적 진단이 아닙니다.
+- 감정 분석은 텍스트를 바탕으로 한 참고용 추정이며, 의학적 진단이 아닙니다.
 - 생성형 AI의 답변은 틀릴 수 있어, 중요한 정보는 교차 검증 기능으로 확인해야 합니다.
 - 개발 단계의 개인 비서 앱이며, 다수 사용자를 위한 운영 환경 검증은 아직 하지 않았습니다.
 
 ## 출처와 재사용
 
-- 감정 분석 서버는 이전 프로젝트(Sync)에서 만든 CLIP 서버를 재사용했습니다.
-- 모델·API: Gemini API, OpenAI CLIP, Fish Audio, NAVER·Google·YouTube Open API
+- 감정 분석 모델은 이 프로젝트에서 공개 데이터로 직접 학습했습니다. 다른 프로젝트의 모델이나 코드를 가져오지 않았습니다.
+- 데이터: KOTE(Korean Online That-gul Emotions), Jeon·Lee·Kim, arXiv:2205.05300, MIT License
+- 모델·API: Gemini API, multilingual-e5-small, Fish Audio, NAVER·Google·YouTube Open API
