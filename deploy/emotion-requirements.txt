@@ -1,0 +1,7 @@
+# 감정 서버(multilingual-e5-small + MLP 헤드). torch는 Dockerfile에서 CPU 버전을 따로 설치한다.
+numpy
+transformers
+fastapi
+uvicorn
+pydantic
+pillow

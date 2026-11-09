@@ -1,0 +1,2516 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <link rel="icon" href="data:,">
+  <meta name="robots" content="noindex, nofollow">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumi</title>
+<script src="/js/vendor/three.r128.min.js"></script>
+<script src="/js/deepdive.js"></script>
+<script src="/js/screenshare.js"></script>
+<script src="/js/otherintent.js"></script>
+<link rel="stylesheet" href="/js/vendor/katex/katex.min.css">
+<script src="/js/vendor/katex/katex.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap');
+  :root {
+    --cyan: #3FE0FF; --cyan-glow: rgba(63,224,255,0.4);
+    --amber: #FFA94D; --amber-glow: rgba(255,169,77,0.4);
+    --bg: #02060c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  body {
+    background-color: var(--bg); color: var(--cyan); font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 26px 32px; position: relative;
+  }
+  body::before {
+    content: ''; position: absolute; inset: 0; z-index: 10; pointer-events: none;
+    background: linear-gradient(rgba(0,0,0,0) 50%, rgba(0,0,0,0.22) 50%); background-size: 100% 3px;
+  }
+  .bg-grid {
+    position: absolute; inset: 0; z-index: 1;
+    /* 순수 장식용 배경 격자무늬라 클릭을 가로채면 안 된다. header/main/footer에만
+       z-index:5가 붙고 LUMI CONSOLE(.console-panel)은 <section>이라 그 규칙에서
+       빠지면서 z-index:auto가 되는데, CSS 스택 규칙상 명시적 z-index(.bg-grid의 1)는
+       숫자가 더 작아도 z-index:auto 요소보다 항상 위에 그려진다. 그래서 눈에는 안
+       보이지만 .bg-grid가 콘솔 패널(SEND 버튼, 입력창, 설정/TTS 버튼) 전체를 덮어서
+       클릭/포커스를 다 가로채고 있었다 — pointer-events:none으로 클릭을 통과시킨다.*/
+    pointer-events: none;
+    background-image:
+      radial-gradient(circle at 50% 40%, rgba(63,224,255,0.08) 0%, transparent 60%),
+      linear-gradient(rgba(63,224,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(63,224,255,0.035) 1px, transparent 1px);
+    background-size: 100% 100%, 32px 32px, 32px 32px;
+  }
+  header, main, footer { position: relative; z-index: 5; }
+
+  header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; border-bottom: 1px solid rgba(63,224,255,0.25); }
+  .brand-container { display: flex; align-items: center; gap: 13px; }
+  .brand-logo { width: 13px; height: 13px; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); transform: rotate(45deg); }
+  .brand-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 1.55rem; letter-spacing: 6px; text-shadow: 0 0 12px var(--cyan-glow); }
+  .status-bar { display: flex; gap: 24px; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.5px; }
+  .status-item { display: flex; align-items: center; gap: 8px; color: #A9C7D3; }
+  .status-item.time { font-family: 'Share Tech Mono', monospace; color: var(--cyan); }
+  .badge-live { width: 7px; height: 7px; background: var(--cyan); border-radius: 50%; box-shadow: 0 0 9px var(--cyan); animation: blink 1.3s infinite alternate; flex-shrink: 0; }
+
+  main { display: grid; grid-template-columns: 300px 1fr 340px; gap: 24px; padding: 26px 0; align-items: start; }
+
+  .hud-panel {
+    background: rgba(4,12,24,0.72); border: 1px solid rgba(63,224,255,0.28);
+    padding: 22px 22px 22px 26px; backdrop-filter: blur(10px);
+    box-shadow: inset 0 0 18px rgba(63,224,255,0.05), 0 0 18px rgba(0,0,0,0.6);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    display: flex; flex-direction: column; gap: 18px; position: relative;
+  }
+  .hud-panel::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  .panel-header {
+    font-family: 'Orbitron', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px; color: #fff;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px dashed rgba(63,224,255,0.3); padding-bottom: 8px;
+  }
+  .panel-header .tag { font-family: 'Rajdhani', sans-serif; font-size: 0.66rem; font-weight: 600; color: var(--cyan); }
+
+  .fn-list { display: flex; flex-direction: column; gap: 9px; }
+  .fn-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 600; }
+  .fn-name { color: #E4F7FF; }
+  .fn-state { display: flex; align-items: center; gap: 6px; color: var(--cyan); font-size: 0.68rem; letter-spacing: 1px; }
+  .fn-state .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+
+  /* 분석 차트 */
+  .chart-block .readout { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .chart-block .readout .num { font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; color: var(--cyan); }
+  .chart-block .readout .lbl { font-size: 0.68rem; font-weight: 600; color: #4A6472; letter-spacing: 0.5px; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 5px; height: 46px; }
+  .bar-chart .bar { flex: 1; background: rgba(63,224,255,0.28); border-radius: 1px 1px 0 0; }
+  .bar-chart .bar.today { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+  .bar-chart .bar.conflict { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .bar-labels { display: flex; gap: 5px; margin-top: 5px; }
+  .bar-labels span { flex: 1; text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 0.56rem; color: #3B4F5A; }
+
+  .center-hud { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; min-width: 0; }
+  .core-stage { position: relative; width: 100%; max-width: 570px; aspect-ratio: 1 / 1; margin: 0 auto; }
+  .core-stage .overlay-svg { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 0 10px rgba(63,224,255,0.3)); }
+  .core-stage.listening .overlay-svg { filter: drop-shadow(0 0 14px rgba(255,169,77,0.45)); }
+  .canvas-slot { position: absolute; inset: 0; filter: drop-shadow(0 0 16px rgba(63,224,255,0.35)); transition: filter 0.5s ease; }
+  .core-stage.listening .canvas-slot { filter: drop-shadow(0 0 22px rgba(255,169,77,0.55)); }
+  .canvas-slot canvas { display: block; }
+  .spin-cw { transform-origin: 100px 100px; animation: spin 22s linear infinite; }
+  .spin-ccw { transform-origin: 100px 100px; animation: spin-reverse 15s linear infinite; }
+  .spin-cw-fast { transform-origin: 100px 100px; animation: spin 9s linear infinite; }
+  .spin-ccw-fast { transform-origin: 100px 100px; animation: spin-reverse 13s linear infinite; }
+
+  .pulse-ring {
+    fill: none; stroke: var(--cyan); stroke-width: 1; transform-origin: 100px 100px;
+    animation: pulse-expand 3.2s ease-out infinite; transition: stroke 0.3s ease;
+  }
+  .pulse-ring.two { animation-delay: 1.6s; }
+  .pulse-ring.listening { stroke: var(--amber); animation-duration: 1.7s; }
+  .center-state { font-family: 'Orbitron', sans-serif; font-size: 0.68rem; letter-spacing: 4px; color: #4A6472; transition: color 0.3s ease; }
+  .center-state.listening { color: var(--amber); text-shadow: 0 0 8px rgba(255,169,77,0.5); }
+  .center-caption { font-family: 'Rajdhani', sans-serif; font-size: 0.62rem; font-weight: 600; color: #3B4F5A; letter-spacing: 0.5px; }
+
+  .sched-list { display: flex; flex-direction: column; }
+  .sched-row { display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid rgba(63,224,255,0.12); font-size: 0.8rem; font-weight: 600; }
+  .sched-row:first-of-type { border-top: none; padding-top: 0; }
+  .sched-time { font-family: 'Share Tech Mono', monospace; color: rgba(63,224,255,0.55); width: 44px; flex-shrink: 0; font-size: 0.74rem; }
+  .sched-row.next .sched-time, .sched-row.next .sched-title { color: var(--cyan); }
+  .sched-title { color: #E4F7FF; flex: 1; }
+  .sched-note { font-family: 'Rajdhani', sans-serif; font-size: 0.62rem; font-weight: 600; color: var(--amber); margin-top: 3px; letter-spacing: 0.5px; }
+
+  .alert-card {
+    border: 1px solid rgba(255,169,77,0.55); background: rgba(38,24,5,0.6); box-shadow: 0 0 16px rgba(255,169,77,0.15);
+    color: var(--amber); padding: 13px;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  }
+  .alert-card .title { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.68rem; letter-spacing: 1.5px; margin-bottom: 6px; display: flex; align-items: center; gap: 7px; }
+  .alert-card .title::before { content: ''; width: 6px; height: 6px; background: var(--amber); box-shadow: 0 0 6px var(--amber); flex-shrink: 0; }
+  .alert-card .body { font-size: 0.75rem; font-weight: 500; line-height: 1.55; color: #E8C79A; }
+
+  .console-panel { margin-bottom: 20px; gap: 14px; }
+  .console-log {
+    display: flex; flex-direction: column; gap: 9px; max-height: 220px; overflow-y: auto;
+    font-family: 'Share Tech Mono', monospace; font-size: 0.8rem; padding-right: 4px;
+  }
+  .console-log::-webkit-scrollbar { width: 5px; }
+  .console-log::-webkit-scrollbar-thumb { background: rgba(63,224,255,0.3); }
+  .log-row { display: flex; gap: 12px; line-height: 1.55; }
+  .log-tag { flex-shrink: 0; width: 50px; font-weight: 700; letter-spacing: 1px; }
+  .log-row.log-user .log-tag { color: var(--amber); }
+  .log-row.log-lumi .log-tag { color: var(--cyan); }
+  .log-text { color: #E4F7FF; white-space: pre-wrap; word-break: break-word; }
+  .log-emotion {
+    margin-left: auto; flex-shrink: 0; align-self: center;
+    font-family: 'Rajdhani', sans-serif; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px;
+    color: var(--amber); border: 1px solid rgba(255,169,77,0.4); padding: 1px 7px;
+  }
+  .log-emotion.pos { color: #7CF2B0; border-color: rgba(124,242,176,0.45); }
+  .log-emotion.neg { color: #FF8A9B; border-color: rgba(255,138,155,0.45); }
+  .log-tone {
+    margin-left: auto; flex-shrink: 0; align-self: center;
+    font-family: 'Rajdhani', sans-serif; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.5px;
+    color: var(--cyan); border: 1px solid rgba(63,224,255,0.35); padding: 1px 7px;
+  }
+  .log-links { display: flex; flex-direction: column; gap: 6px; padding-left: 62px; margin-top: -4px; }
+  .log-link {
+    display: block; padding: 6px 10px; text-decoration: none; word-break: break-word;
+    color: #E4F7FF; background: rgba(63,224,255,0.05);
+    border: 1px solid rgba(63,224,255,0.25); border-left: 2px solid var(--cyan);
+  }
+  .log-link:hover { background: rgba(63,224,255,0.12); border-color: var(--cyan); }
+  .log-link-kind {
+    margin-right: 8px; font-family: 'Rajdhani', sans-serif; font-size: 0.68rem; font-weight: 700;
+    letter-spacing: 1px; color: var(--amber);
+  }
+  .log-link-sub { margin-left: 8px; color: #6F8C99; }
+  .console-attach { padding: 0 12px; letter-spacing: 0; }
+  .console-panel.dragging { outline: 1px dashed var(--cyan); outline-offset: -4px; }
+  .attach-preview[hidden] { display: none; }
+  .attach-preview {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 6px 10px;
+    border: 1px solid rgba(63,224,255,0.25); background: rgba(63,224,255,0.04);
+  }
+  .attach-preview img { height: 44px; width: auto; border: 1px solid rgba(63,224,255,0.35); }
+  .attach-name { color: #E4F7FF; font-size: 0.8rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .attach-note { flex: 1; color: #6D8A99; font-size: 0.7rem; }
+  .attach-remove {
+    background: none; border: 1px solid rgba(255,138,155,0.5); color: #FF8A9B; cursor: pointer;
+    width: 24px; height: 24px; font-size: 0.8rem; line-height: 1;
+  }
+  .attach-remove:hover { background: rgba(255,138,155,0.15); }
+  .log-thumb { max-height: 90px; max-width: 160px; align-self: center; border: 1px solid rgba(63,224,255,0.3); margin-left: 8px; }
+  .console-input-row { display: flex; gap: 10px; }
+  .console-input {
+    flex: 1; background: rgba(2,10,18,0.7); border: 1px solid rgba(63,224,255,0.3);
+    color: var(--cyan); font-family: 'Rajdhani', sans-serif; font-size: 0.9rem; font-weight: 600;
+    padding: 10px 12px; outline: none;
+  }
+  .console-input::placeholder { color: #3B4F5A; }
+  .console-input:focus { border-color: var(--cyan); box-shadow: 0 0 8px rgba(63,224,255,0.3); }
+  .console-send {
+    background: rgba(63,224,255,0.12); border: 1px solid var(--cyan); color: var(--cyan);
+    font-family: 'Orbitron', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px;
+    padding: 0 20px; cursor: pointer; transition: background 0.2s ease;
+  }
+  .console-send:hover { background: rgba(63,224,255,0.25); }
+  .console-send:disabled, .console-input:disabled { opacity: 0.5; cursor: not-allowed; }
+  .console-check { padding: 0 12px; font-size: 0.62rem; color: #C9A7FF; border-color: #C9A7FF; background: rgba(201,167,255,0.1); }
+  .console-check:hover { background: rgba(201,167,255,0.22); }
+  .console-check:disabled { opacity: 0.5; cursor: not-allowed; }
+  .console-check-source {
+    background: rgba(2,10,18,0.7); border: 1px solid #C9A7FF; color: #C9A7FF;
+    font-family: 'Rajdhani', sans-serif; font-size: 0.7rem; font-weight: 600;
+    padding: 0 6px; outline: none; cursor: pointer; max-width: 96px;
+  }
+  .console-check-source:disabled { opacity: 0.5; cursor: not-allowed; }
+  .log-row.log-check .log-tag { color: #C9A7FF; }
+  .log-row.log-check .log-text { color: #D9C7FF; }
+
+  .console-header-controls { display: flex; align-items: center; gap: 12px; }
+  .tts-select {
+    background: rgba(2,10,18,0.7); border: 1px solid rgba(63,224,255,0.3); color: var(--cyan);
+    font-family: 'Rajdhani', sans-serif; font-size: 0.72rem; font-weight: 600;
+    padding: 3px 6px; outline: none; cursor: pointer;
+  }
+  .tts-toggle {
+    background: rgba(63,224,255,0.12); border: 1px solid rgba(63,224,255,0.3); color: var(--cyan);
+    font-size: 0.85rem; line-height: 1; padding: 4px 8px; cursor: pointer; transition: background 0.2s ease;
+  }
+  .tts-toggle:hover { background: rgba(63,224,255,0.25); }
+  .tts-toggle.muted { border-color: rgba(255,169,77,0.4); color: var(--amber); opacity: 0.7; }
+
+  .settings-modal {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(2,6,10,0.75); align-items: center; justify-content: center;
+  }
+  .settings-modal.open { display: flex; }
+  .settings-panel {
+    background: rgba(8,16,24,0.97); border: 1px solid rgba(63,224,255,0.4);
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
+    width: 320px; max-width: 90vw; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  }
+  .settings-header {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'Orbitron', sans-serif; font-size: 0.8rem; font-weight: 700; letter-spacing: 1.5px;
+    color: var(--cyan); border-bottom: 1px solid rgba(63,224,255,0.25); padding-bottom: 10px; margin-bottom: 16px;
+  }
+  .settings-close {
+    background: none; border: none; color: var(--cyan); font-size: 1rem; cursor: pointer; line-height: 1; padding: 2px 6px;
+  }
+  .settings-row { margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
+  .settings-row:last-child { margin-bottom: 0; }
+  .settings-row label {
+    font-family: 'Rajdhani', sans-serif; font-size: 0.78rem; font-weight: 600; color: #9FC9D6;
+  }
+  .settings-row select {
+    background: rgba(2,10,18,0.7); border: 1px solid rgba(63,224,255,0.3); color: var(--cyan);
+    font-family: 'Rajdhani', sans-serif; font-size: 0.88rem; font-weight: 600; padding: 7px 10px; outline: none;
+  }
+  .settings-row select:focus { border-color: var(--cyan); box-shadow: 0 0 8px rgba(63,224,255,0.3); }
+
+  .toast-container {
+    position: fixed; bottom: 24px; right: 24px; z-index: 999;
+    display: flex; flex-direction: column-reverse; gap: 10px; width: 300px; pointer-events: none;
+  }
+  .toast {
+    background: rgba(8,16,24,0.94); font-family: 'Share Tech Mono', monospace; font-size: 0.76rem; line-height: 1.5;
+    padding: 11px 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+    animation: toast-in 0.25s ease-out; pointer-events: auto;
+    border: 1px solid rgba(255,90,90,0.45); border-left: 3px solid #FF5A5A; color: #FFD9D6;
+  }
+  .toast.toast-success { border-color: rgba(63,224,255,0.45); border-left-color: var(--cyan); color: #CFF6FF; }
+  .toast .toast-title { color: #FF8A8A; font-family: 'Orbitron', sans-serif; font-size: 0.68rem; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 4px; }
+  .toast.toast-success .toast-title { color: var(--cyan); }
+  @keyframes toast-in { from { transform: translateX(36px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes toast-out { from { transform: translateX(0); opacity: 1; } to { transform: translateX(36px); opacity: 0; } }
+
+  footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(63,224,255,0.25); padding-top: 14px; }
+  .voice-monitor { display: flex; flex-direction: column; gap: 4px; }
+  .voice-monitor .row { display: flex; align-items: center; gap: 12px; font-family: 'Orbitron', sans-serif; font-size: 0.72rem; letter-spacing: 1.5px; }
+  .voice-monitor .state { color: #4A6472; transition: color 0.3s ease; }
+  .voice-monitor .state.listening { color: var(--amber); }
+  .voice-monitor .hint { font-family: 'Rajdhani', sans-serif; font-size: 0.68rem; font-weight: 600; color: #3B4F5A; letter-spacing: 0.5px; }
+  .eq-wave { display: flex; align-items: center; gap: 4px; height: 22px; cursor: pointer; padding: 4px; }
+  .eq-bar { width: 3px; height: 18%; background: var(--cyan); box-shadow: 0 0 7px var(--cyan); transition: background 0.3s ease; }
+  .eq-wave.listening .eq-bar { background: var(--amber); box-shadow: 0 0 7px var(--amber); animation: eq-anim 0.8s ease-in-out infinite alternate; }
+  .eq-wave.listening .eq-bar:nth-child(2) { animation-delay: 0.15s; }
+  .eq-wave.listening .eq-bar:nth-child(3) { animation-delay: 0.3s; }
+  .eq-wave.listening .eq-bar:nth-child(4) { animation-delay: 0.1s; }
+  .eq-wave.listening .eq-bar:nth-child(5) { animation-delay: 0.4s; }
+
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+  @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+  @keyframes pulse-expand { 0% { transform: scale(0.25); opacity: 0.7; } 100% { transform: scale(1.7); opacity: 0; } }
+  @keyframes blink { 0% { opacity: 0.25; } 100% { opacity: 1; } }
+  @keyframes eq-anim { 0% { height: 18%; } 100% { height: 100%; } }
+  /* ── 감정 시계열(MOOD) / 지식 노트(MEMORY NOTES) / 개인정보 설정 ── */
+  .mood-chart { display: flex; gap: 5px; height: 58px; position: relative; }
+  .mood-chart::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(63,224,255,0.22); }
+  .mood-col { flex: 1; position: relative; cursor: default; }
+  .mood-bar { position: absolute; left: 0; right: 0; min-height: 2px; border-radius: 1px; }
+  .mood-bar.pos { bottom: 50%; background: rgba(124,242,176,0.75); box-shadow: 0 0 5px rgba(124,242,176,0.5); }
+  .mood-bar.neg { top: 50%; background: rgba(255,138,155,0.75); box-shadow: 0 0 5px rgba(255,138,155,0.5); }
+  .mood-bar.none { top: calc(50% - 1px); height: 2px; background: #1E3340; box-shadow: none; }
+  .mood-col.today .mood-bar.pos, .mood-col.today .mood-bar.neg { outline: 1px solid rgba(228,247,255,0.55); }
+  .mood-empty { font-size: 0.72rem; color: #4A6472; margin-top: 8px; }
+  /* ── TODAY AT A GLANCE / UPCOMING REMINDERS ── */
+  .sched-block { display: flex; flex-direction: column; gap: 14px; }
+  .glance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .glance-tile { border: 1px solid rgba(63,224,255,0.16); background: rgba(63,224,255,0.04); padding: 9px 10px 8px; }
+  .glance-val { font-family: 'Share Tech Mono', monospace; font-size: 1.15rem; color: var(--cyan); line-height: 1.15; text-shadow: 0 0 8px rgba(63,224,255,0.35); white-space: nowrap; }
+  .glance-val.warn { color: var(--amber); text-shadow: 0 0 8px rgba(255,184,77,0.4); }
+  .glance-lbl { font-size: 0.64rem; font-weight: 600; color: #4A6472; letter-spacing: 0.5px; margin-top: 3px; }
+  .rem-list { display: flex; flex-direction: column; }
+  .rem-row { display: flex; gap: 10px; padding: 7px 0; border-top: 1px solid rgba(63,224,255,0.12); font-size: 0.78rem; font-weight: 600; }
+  .rem-row:first-child { border-top: none; padding-top: 0; }
+  .rem-when { font-family: 'Share Tech Mono', monospace; color: rgba(63,224,255,0.6); font-size: 0.7rem; width: 92px; flex-shrink: 0; padding-top: 1px; white-space: nowrap; }
+  .rem-text { color: #E4F7FF; flex: 1; word-break: break-word; }
+  /* ── SECURITY STATUS ── */
+  .sec-toggle { cursor: pointer; user-select: none; }
+  .sec-toggle .arrow { display: inline-block; width: 12px; color: #4A6472; font-size: 0.7rem; }
+  .sec-toggle:hover .arrow { color: var(--cyan); }
+  .sec-body[hidden] { display: none; }
+  .sec-head { display: flex; align-items: center; gap: 10px; }
+  .sec-badge { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.66rem; letter-spacing: 1.5px; padding: 3px 8px; border: 1px solid; flex-shrink: 0; }
+  .sec-badge.secure { color: #7CF2B0; border-color: rgba(124,242,176,0.55); box-shadow: 0 0 6px rgba(124,242,176,0.25); }
+  .sec-badge.notice { color: var(--amber); border-color: rgba(255,184,77,0.55); }
+  .sec-badge.alert { color: #FF8A9B; border-color: rgba(255,138,155,0.6); box-shadow: 0 0 6px rgba(255,138,155,0.3); }
+  .sec-badge.unknown { color: #4A6472; border-color: #1E3340; }
+  .sec-headline { font-size: 0.74rem; line-height: 1.45; color: #B7D3DF; }
+  .sec-cats { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+  .sec-chip { font-size: 0.66rem; padding: 2px 7px; border: 1px solid #1E3340; color: #B7D3DF; }
+  .sec-chip b { color: var(--amber); margin-left: 4px; font-weight: 700; }
+  .sec-detail { margin-top: 9px; }
+  .sec-detail summary { cursor: pointer; font-size: 0.68rem; color: #4A6472; letter-spacing: 0.5px; list-style: none; }
+  .sec-detail summary::before { content: '▸ '; }
+  .sec-detail[open] summary::before { content: '▾ '; }
+  .sec-prot { display: flex; justify-content: space-between; gap: 8px; font-size: 0.68rem; padding: 4px 0; border-bottom: 1px solid rgba(63,224,255,0.08); }
+  .sec-prot .nm { color: #B7D3DF; }
+  .sec-prot .st { flex-shrink: 0; letter-spacing: 1px; font-size: 0.62rem; }
+  .sec-prot .st.on { color: #7CF2B0; }
+  .sec-prot .st.off { color: #4A6472; }
+  .sec-prot .nt { display: block; color: #4A6472; font-size: 0.62rem; margin-top: 1px; }
+  .sec-recent { font-size: 0.64rem; color: #4A6472; padding: 3px 0; display: flex; justify-content: space-between; gap: 8px; }
+  .sec-recent span:first-child { color: #B7D3DF; }
+  .note-list { max-height: 118px; overflow-y: auto; }
+  .note-list::-webkit-scrollbar { width: 4px; }
+  .note-list::-webkit-scrollbar-thumb { background: rgba(63,224,255,0.3); }
+  .note-row { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-top: 1px solid rgba(63,224,255,0.12); font-size: 0.76rem; font-weight: 500; line-height: 1.45; color: #CFE6F0; }
+  .note-row:first-child { border-top: none; padding-top: 0; }
+  .note-text { flex: 1; word-break: break-word; }
+  .note-del { background: none; border: none; color: #6F8C99; cursor: pointer; font-size: 0.8rem; line-height: 1; padding: 2px 4px; }
+  .note-del:hover { color: #FF8A9B; }
+  .note-add { display: flex; gap: 6px; margin-top: 8px; }
+  .note-add input {
+    flex: 1; min-width: 0; background: rgba(2,10,18,0.7); border: 1px solid rgba(63,224,255,0.3);
+    color: var(--cyan); font-family: 'Rajdhani', sans-serif; font-size: 0.8rem; font-weight: 600; padding: 5px 8px; outline: none;
+  }
+  .note-add input:focus { border-color: var(--cyan); }
+  .note-add button {
+    background: rgba(63,224,255,0.12); border: 1px solid var(--cyan); color: var(--cyan); cursor: pointer;
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.75rem; padding: 0 10px;
+  }
+  .note-add button:hover { background: rgba(63,224,255,0.25); }
+  .note-foot { display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.66rem; color: #4A6472; }
+  .note-foot button { background: none; border: none; color: #6F8C99; cursor: pointer; font-family: inherit; font-size: inherit; text-decoration: underline; padding: 0; }
+  .note-foot button:hover { color: #FF8A9B; }
+  .settings-row.toggle { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+  .settings-row.toggle label { flex: 1; }
+  .settings-row.toggle small { display: block; margin-top: 2px; font-size: 0.66rem; font-weight: 500; color: #4A6472; letter-spacing: 0; text-transform: none; }
+  .settings-row.toggle input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--cyan); cursor: pointer; flex-shrink: 0; }
+  .settings-danger {
+    background: none; border: 1px solid rgba(255,138,155,0.5); color: #FF8A9B; cursor: pointer;
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.78rem; padding: 6px 10px; align-self: flex-start;
+  }
+  .settings-danger:hover { background: rgba(255,138,155,0.15); }
+  /* ── 외국어 답변의 한국어 번역(화면 표시 전용, 음성으로 읽지 않음) ── */
+  .log-row.log-ko { margin-top: -4px; }
+  .log-row.log-ko .log-tag { color: #6F8C99; font-size: 0.7rem; }
+  .log-row.log-ko .log-text { color: #8FB3C2; font-size: 0.9em; }
+  .log-row.log-ko .log-text.pending { color: #4A6472; font-style: italic; }
+</style>
+<link rel="stylesheet" href="/css/result-stage.css">
+<script src="/js/stt-server.js"></script>
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+
+  <header>
+    <div class="brand-container">
+      <div class="brand-logo"></div>
+      <div class="brand-title">LUMI</div>
+    </div>
+    <div class="status-bar">
+      <div class="status-item"><div class="badge-live"></div>GEMINI · CONNECTED</div>
+      <div class="status-item">TTS · READY</div>
+      <div class="status-item time" id="clock">09:03:14</div>
+      <div class="status-item" id="userInfo" style="gap:10px;"></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hud-panel">
+      <div class="panel-header"><span>AVAILABLE FUNCTIONS</span><span class="tag">ONLINE</span></div>
+      <div class="fn-list">
+        <div class="fn-row"><span class="fn-name">일정 관리</span><span class="fn-state"><span class="dot"></span>ONLINE</span></div>
+        <div class="fn-row"><span class="fn-name">리마인더</span><span class="fn-state"><span class="dot"></span>ONLINE</span></div>
+        <div class="fn-row"><span class="fn-name">웹 검색</span><span class="fn-state"><span class="dot"></span>ONLINE</span></div>
+      </div>
+
+      <div class="chart-block">
+        <div class="panel-header" style="margin-bottom: 12px;"><span>API USAGE · 7 DAYS</span></div>
+        <div class="readout"><span class="num" id="usageReadout">- / -</span><span class="lbl">TODAY</span></div>
+        <div class="bar-chart" id="usageBarChart"></div>
+        <div class="bar-labels" id="usageBarLabels"></div>
+      </div>
+
+      <div class="chart-block">
+        <div class="panel-header" style="margin-bottom: 12px;"><span>MOOD · 7 DAYS</span><span class="tag" id="moodAvgTag">—</span></div>
+        <div class="mood-chart" id="moodChart"></div>
+        <div class="bar-labels" id="moodLabels"></div>
+        <div class="mood-empty" id="moodEmpty" style="display:none;"></div>
+      </div>
+
+      <div class="chart-block">
+        <div class="panel-header sec-toggle" id="secToggle" style="margin-bottom: 10px;" role="button" tabindex="0" aria-expanded="false" title="펼치기"><span><span class="arrow" id="secArrow">▸</span>SECURITY STATUS</span><span class="tag">24H</span></div>
+        <div class="sec-head"><span class="sec-badge unknown" id="secBadge">—</span><span class="sec-headline" id="secHeadline">보안 상태를 불러오는 중...</span></div>
+        <div class="sec-body" id="secBody" hidden>
+          <div class="sec-cats" id="secCats"></div>
+          <details class="sec-detail" id="secDetail" style="display:none;">
+            <summary id="secSummary"></summary>
+            <div id="secProtections"></div>
+            <div id="secRecent"></div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="center-hud">
+      <div class="core-stage" id="coreStage">
+        <svg class="core-svg overlay-svg" id="coreSvg" viewBox="0 0 200 200">
+          <g id="ticks" stroke="rgba(63,224,255,0.25)" stroke-width="0.5"></g>
+          <circle class="pulse-ring" id="pulse1" cx="100" cy="100" r="40"/>
+          <circle class="pulse-ring two" id="pulse2" cx="100" cy="100" r="40"/>
+        </svg>
+        <div class="canvas-slot" id="plexusCanvasSlot"></div>
+      </div>
+      <div class="center-state" id="centerState">STANDBY</div>
+      <div class="center-caption">NEURAL ACTIVITY — 실시간 처리 시각화</div>
+    </section>
+
+    <section class="hud-panel">
+      <div class="panel-header"><span>TODAY AT A GLANCE</span><span class="tag" id="glanceDate">—</span></div>
+      <div class="glance-grid">
+        <div class="glance-tile"><div class="glance-val" id="glNext">—</div><div class="glance-lbl">다음 일정까지</div></div>
+        <div class="glance-tile"><div class="glance-val" id="glToday">–</div><div class="glance-lbl">오늘 일정</div></div>
+        <div class="glance-tile"><div class="glance-val" id="glRem">–</div><div class="glance-lbl">대기 리마인더</div></div>
+        <div class="glance-tile"><div class="glance-val" id="glConf">–</div><div class="glance-lbl">겹치는 일정</div></div>
+      </div>
+
+      <div class="sched-block">
+        <div class="panel-header"><span>TODAY'S SCHEDULE</span><span class="tag" id="schedCount">- ITEMS</span></div>
+        <div class="sched-list" id="schedList">
+          <div class="sched-row"><span class="sched-title" style="color:#4A6472;">일정을 불러오는 중...</span></div>
+        </div>
+        <div class="alert-card" id="alertCard" style="display:none;">
+          <div class="title">SCHEDULE CONFLICT</div>
+          <div class="body" id="alertBody"></div>
+        </div>
+      </div>
+
+      <div class="chart-block">
+        <div class="panel-header" style="margin-bottom: 10px;"><span>UPCOMING REMINDERS</span><span class="tag" id="remCountTag">-</span></div>
+        <div class="rem-list" id="remList"><div class="mood-empty" style="margin-top:0;">불러오는 중...</div></div>
+      </div>
+
+      <div class="chart-block">
+        <div class="panel-header" style="margin-bottom: 12px;"><span>WEEKLY DENSITY</span><span class="tag">NEXT 7 DAYS</span></div>
+        <div class="bar-chart" id="weekChart"></div>
+        <div class="bar-labels" id="weekLabels"></div>
+      </div>
+
+      <div class="chart-block">
+        <div class="panel-header" style="margin-bottom: 10px;"><span>MEMORY NOTES</span><span class="tag" id="noteCountTag">0 / 50</span></div>
+        <div class="note-list" id="noteList"></div>
+        <form class="note-add" id="noteForm">
+          <input type="text" id="noteInput" maxlength="200" placeholder="기억할 내용…" autocomplete="off">
+          <button type="submit">추가</button>
+        </form>
+        <div class="note-foot"><span>비밀번호·카드번호는 저장되지 않아요</span><button type="button" id="noteClearAll" style="display:none;">전체 삭제</button></div>
+      </div>
+    </section>
+  </main>
+
+  <section class="hud-panel console-panel">
+    <div class="panel-header">
+      <span>LUMI CONSOLE</span>
+      <div class="console-header-controls">
+        <button id="settingsBtn" class="tts-toggle" type="button" title="설정">⚙️</button>
+        <button id="ttsToggle" class="tts-toggle" type="button" title="음성 출력 켜기/끄기">🔊</button>
+        <span class="tag" id="consoleTag">CONNECTING...</span>
+      </div>
+    </div>
+    <div class="console-log" id="consoleLog"></div>
+    <div class="attach-preview" id="attachPreview" hidden>
+      <img id="attachThumb" alt="첨부할 이미지 미리보기">
+      <span class="attach-name" id="attachName"></span>
+      <span class="attach-note">사진은 표정·분위기로 감정만 분석하고 바로 버려요(저장·내용 인식 안 함).</span>
+      <button class="attach-remove" id="attachRemove" type="button" title="첨부 취소">✕</button>
+    </div>
+    <div class="console-input-row">
+      <input type="file" id="attachFile" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
+      <button id="attachBtn" class="console-send console-attach" type="button" title="사진 첨부 — 감정 분석에만 쓰고 버려요 (붙여넣기·끌어다 놓기도 가능)">📎</button>
+      <input type="text" id="consoleInput" class="console-input" placeholder="메시지를 입력하세요..." autocomplete="off" maxlength="2000">
+      <select id="consoleCheckSource" class="console-check-source" title="교차 검증에 쓸 검색 근거">
+        <option value="both">네이버+구글</option>
+        <option value="naver">네이버</option>
+        <option value="google">구글</option>
+      </select>
+      <button id="consoleCheck" class="console-send console-check" type="button" title="Lumi의 직전 답변을 선택한 검색 근거로 교차 검증">CROSS-CHECK</button>
+      <button id="consoleSend" class="console-send" type="button">SEND</button>
+    </div>
+  </section>
+
+  <div id="settingsModal" class="settings-modal">
+    <div class="settings-panel">
+      <div class="settings-header">
+        <span>SETTINGS</span>
+        <button id="settingsClose" class="settings-close" type="button">✕</button>
+      </div>
+      <div class="settings-row">
+        <label for="inputLangSelect">입력 언어 (음성 인식)</label>
+        <select id="inputLangSelect">
+          <option value="ko">한국어</option>
+          <option value="en">English</option>
+          <option value="zh">中文</option>
+          <option value="ja">日本語</option>
+          <option value="es">Español</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <label for="responseLangSelect">AI 답변 언어</label>
+        <select id="responseLangSelect">
+          <option value="auto">자동 (사용자와 동일한 언어)</option>
+          <option value="ko">한국어로 항상 답변</option>
+          <option value="en">영어로 항상 답변</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <label for="voiceGenderSelect">음성 성별</label>
+        <select id="voiceGenderSelect">
+          <option value="female">여성</option>
+          <option value="male">남성</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <label for="sttEngineSelect">음성 인식 엔진</label>
+        <select id="sttEngineSelect">
+          <option value="browser">브라우저 내장 (기본, 무료)</option>
+          <option value="server">서버 인식 (OpenAI, 더 정확)</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <label for="alwaysListenToggle">상시 듣기 (버튼 없이 항상 음성 대화)</label>
+        <input type="checkbox" id="alwaysListenToggle">
+      </div>
+      <div class="settings-row toggle">
+        <label for="emotionLogToggle">감정 기록 저장<small>감정 수치만 저장해요(대화 내용·사진은 저장 안 함). 90일 뒤 자동 삭제돼요.</small></label>
+        <input type="checkbox" id="emotionLogToggle" checked>
+      </div>
+      <div class="settings-row toggle">
+        <label for="proactiveCareToggle">먼저 말 걸기<small>기분이 계속 가라앉아 보이면 Lumi가 먼저 안부를 건네요.</small></label>
+        <input type="checkbox" id="proactiveCareToggle" checked>
+      </div>
+      <div class="settings-row">
+        <button class="settings-danger" type="button" id="moodClearBtn">감정 기록 모두 삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <audio id="ttsPlayer" style="display:none;"></audio>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <footer>
+    <div class="voice-monitor">
+      <div class="row"><span>LUMI VOICE MATRIX</span><span class="state" id="voiceState">STANDBY</span></div>
+      <span class="hint">클릭하여 음성 입력 전환</span>
+    </div>
+    <div class="eq-wave" id="eqWave">
+      <div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div><div class="eq-bar"></div>
+    </div>
+  </footer>
+
+<script>
+  // CSRF(쿠키 기반 더블 서브밋): 서버(SecurityConfig)가 매 응답마다 심어주는 XSRF-TOKEN
+  // 쿠키 값을 그대로 읽어, fetch로 보내는 모든 상태 변경 요청(POST)에 X-XSRF-TOKEN
+  // 헤더로 되돌려보낸다. 전통적인 <form method="post"> 제출은 헤더를 못 쓰므로
+  // hidden input(name="_csrf")으로 같은 토큰을 같이 보낸다.
+  function getCsrfToken() {
+    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  // 로그인 사용자 표시 + 로그아웃 (전체 앱이 Spring Security로 잠겨 있으므로,
+  // 이 스크립트가 실행되는 시점엔 이미 로그인된 상태가 보장된다)
+  (function () {
+    const userInfo = document.getElementById('userInfo');
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(me => {
+        if (!me.authenticated) return;
+        // XSS 방어: 표시 이름(아이디/구글 이름)과 토큰은 사용자가 통제할 수 있는 값이므로
+        // innerHTML에 넣기 전에 반드시 HTML 이스케이프한다.
+        const escapeHtml = (v) => String(v).replace(/[&<>"']/g, (c) => (
+          { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        userInfo.innerHTML =
+          '<span style="color:#A9C7D3;">' + escapeHtml(me.displayName || '사용자') + '</span>' +
+          '<form method="post" action="/logout" style="display:inline;">' +
+          '<input type="hidden" name="_csrf" value="' + escapeHtml(getCsrfToken() || '') + '">' +
+          '<button type="submit" style="background:none;border:none;color:var(--cyan);' +
+          'font-family:inherit;font-size:0.8rem;font-weight:600;letter-spacing:0.5px;' +
+          'cursor:pointer;padding:0;text-decoration:underline;">로그아웃</button></form>';
+      })
+      .catch(() => {});
+  })();
+
+  // 나침반 눈금
+  const ticks = document.getElementById('ticks');
+  { const cx = 100, cy = 100, r1 = 97, r2 = 101;
+    for (let i = 0; i < 36; i++) {
+      const angle = (i * 10) * Math.PI / 180;
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', (cx + r1 * Math.cos(angle)).toFixed(2));
+      line.setAttribute('y1', (cy + r1 * Math.sin(angle)).toFixed(2));
+      line.setAttribute('x2', (cx + r2 * Math.cos(angle)).toFixed(2));
+      line.setAttribute('y2', (cy + r2 * Math.sin(angle)).toFixed(2));
+      ticks.appendChild(line);
+    }
+  }
+
+  // 뉴런 네트워크: Three.js로 실제 3D 플렉서스 구체를 렌더링하고,
+  // 무작위 발화가 인접 노드로 전파되는 것처럼 정점 색을 실시간으로 갱신함
+  let listening = false;
+
+  const slot = document.getElementById('plexusCanvasSlot');
+  const STAGE_SIZE = Math.max(200, Math.min(570, slot.clientWidth || 570));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 1, 1000);
+  camera.position.z = 460;
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setSize(STAGE_SIZE, STAGE_SIZE);
+  renderer.setPixelRatio(window.devicePixelRatio || 1);
+  slot.appendChild(renderer.domElement);
+
+  // 창 크기가 바뀌면 캔버스도 컨테이너 크기에 맞춰 다시 조정
+  window.addEventListener('resize', () => {
+    const size = Math.max(200, Math.min(570, slot.clientWidth || 570));
+    renderer.setSize(size, size);
+  });
+
+  const NODE_COUNT = 500;
+  const SPHERE_R = 112;
+  const baseColor = new THREE.Color('#3FE0FF');
+  const positions = new Float32Array(NODE_COUNT * 3);
+  const nodeColors = new Float32Array(NODE_COUNT * 3);
+  const nodeVecs = [];
+  const nodePhase = new Float32Array(NODE_COUNT);
+  const nodeClusterIndex = new Int16Array(NODE_COUNT);
+  const PULSE_FREQ = 3.1, PULSE_AMP = 14;   // 전체 노드가 동시에 커졌다 작아지는 펄스 (호흡과 같은 주파수로 동기화)
+  const NOISE_FREQ = 1.2, NOISE_AMP = 5;    // 노드마다 제각각인 무작위 위상의 노이즈
+
+  // 몇 개의 '클러스터 중심'을 구 표면에 흩뿌리고, 그 주변에 노드를 뭉치게 배치해
+  // 완전히 균일한 격자가 아니라 밀도가 들쭉날쭉한 유기적인 형태를 만든다
+  const CLUSTER_COUNT = 16;
+  const clusters = [];
+  for (let c = 0; c < CLUSTER_COUNT; c++) {
+    const u = Math.random(), v = Math.random();
+    const theta = u * 2 * Math.PI, phi = Math.acos(2 * v - 1);
+    clusters.push(new THREE.Vector3(Math.sin(phi) * Math.cos(theta), Math.sin(phi) * Math.sin(theta), Math.cos(phi)));
+  }
+
+  for (let i = 0; i < NODE_COUNT; i++) {
+    let x, y, z;
+    let clusterIdx = -1;
+    if (Math.random() < 0.22) {
+      // 클러스터 중심 근처에 가우시안 느낌으로 뭉치게 배치
+      clusterIdx = Math.floor(Math.random() * CLUSTER_COUNT);
+      const center = clusters[clusterIdx];
+      const spread = 0.32;
+      const jitter = new THREE.Vector3(
+        (Math.random() + Math.random() + Math.random() - 1.5) * spread,
+        (Math.random() + Math.random() + Math.random() - 1.5) * spread,
+        (Math.random() + Math.random() + Math.random() - 1.5) * spread
+      );
+      const dir = center.clone().add(jitter).normalize();
+      const r = SPHERE_R * (0.88 + Math.random() * 0.2);
+      x = dir.x * r; y = dir.y * r; z = dir.z * r;
+    } else {
+      // 나머지는 배경 텍스처용으로 고르게 분포
+      const u = Math.random(), v = Math.random();
+      const theta = u * 2 * Math.PI, phi = Math.acos(2 * v - 1);
+      const r = SPHERE_R * (0.86 + Math.random() * 0.22);
+      x = r * Math.sin(phi) * Math.cos(theta);
+      y = r * Math.sin(phi) * Math.sin(theta);
+      z = r * Math.cos(phi);
+    }
+    positions[i * 3] = x; positions[i * 3 + 1] = y; positions[i * 3 + 2] = z;
+    nodeColors[i * 3] = baseColor.r; nodeColors[i * 3 + 1] = baseColor.g; nodeColors[i * 3 + 2] = baseColor.b;
+    nodeVecs.push(new THREE.Vector3(x, y, z));
+    nodePhase[i] = Math.random() * Math.PI * 2;
+    nodeClusterIndex[i] = clusterIdx;
+  }
+  const currentPos = nodeVecs.map(v => v.clone());
+
+  // 클러스터별로 '한 번씩 무작위로 확 뭉쳤다가 원래 거리로 풀리는' 상태를 관리
+  const clusterContract = new Float32Array(CLUSTER_COUNT);
+  const clusterState = Array.from({ length: CLUSTER_COUNT }, () => ({ active: false, t: 0 }));
+  const CONTRACT_DURATION = 2.0;   // 한 번 뭉쳤다 풀리는 데 걸리는 시간(초)
+  const CONTRACT_STRENGTH = 0.4;   // 얼마나 가까워지는지 (0~1) — 너무 심하게 뭉쳐 보이지 않도록 완화
+  const MAX_CONCURRENT_CONTRACT = 1; // 동시에 뭉칠 수 있는 클러스터 수 제한 (풀렸을 때 확실히 균일해 보이게)
+  setInterval(() => {
+    const activeCount = clusterState.filter(s => s.active).length;
+    if (activeCount >= MAX_CONCURRENT_CONTRACT) return;
+    const idle = clusterState.map((s, i) => ({ s, i })).filter(({ s }) => !s.active);
+    if (!idle.length) return;
+    if (Math.random() < 0.35) {
+      const pick = idle[Math.floor(Math.random() * idle.length)].s;
+      pick.active = true; pick.t = 0;
+    }
+  }, 300);
+
+  const pointGeom = new THREE.BufferGeometry();
+  pointGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  pointGeom.setAttribute('color', new THREE.BufferAttribute(nodeColors, 3));
+  const pointMat = new THREE.PointsMaterial({ size: 3.3, vertexColors: true, transparent: true, opacity: 0.95, sizeAttenuation: true, blending: THREE.AdditiveBlending });
+  const points = new THREE.Points(pointGeom, pointMat);
+
+  // 연결: 매 프레임 노드 사이의 실제 거리를 다시 계산해서, 가까우면 선을 긋고
+  // 멀어지면 선을 빼버리는 방식 — 그래서 펄스·노이즈로 움직일 때마다 선이 실제로 생겼다 사라짐
+  const BASE_MAX_DIST = 39.5;   // 항상 유지되는 기본 연결 거리 (약 4100대 선을 유지)
+  const EXTRA_MAX_DIST = 18;    // 구체가 팽창(성장)할 때 추가로 늘어나는 연결 거리
+  const MAX_EDGES = 20000;      // 한 프레임에 그릴 수 있는 선의 최대 개수(성능 상한)
+  const linePositions = new Float32Array(MAX_EDGES * 6);
+  const lineColorsArr = new Float32Array(MAX_EDGES * 6);
+  const lineGeom = new THREE.BufferGeometry();
+  lineGeom.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+  lineGeom.setAttribute('color', new THREE.BufferAttribute(lineColorsArr, 3));
+  lineGeom.setDrawRange(0, 0);
+  const lineMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending });
+  const lines = new THREE.LineSegments(lineGeom, lineMat);
+
+  // 이번 프레임에 실제로 연결된 쌍의 목록 (신호 발화·펄스 이동이 여기서 이웃을 찾음)
+  let currentEdges = [];
+
+
+  // 신호가 노드 사이를 실제로 이동하는 펄스 (작은 발광점이 엣지를 타고 이동)
+  const PULSE_COUNT = 46;
+  const pulsePositions = new Float32Array(PULSE_COUNT * 3).fill(9999);
+  const pulseColors = new Float32Array(PULSE_COUNT * 3);
+  const pulseGeom = new THREE.BufferGeometry();
+  pulseGeom.setAttribute('position', new THREE.BufferAttribute(pulsePositions, 3));
+  pulseGeom.setAttribute('color', new THREE.BufferAttribute(pulseColors, 3));
+  const pulseMat = new THREE.PointsMaterial({ size: 4.6, vertexColors: true, transparent: true, opacity: 1, sizeAttenuation: true, blending: THREE.AdditiveBlending });
+  const pulsePoints = new THREE.Points(pulseGeom, pulseMat);
+  const pulseData = Array.from({ length: PULSE_COUNT }, () => ({ active: false }));
+
+  const group = new THREE.Group();
+  group.add(points); group.add(lines); group.add(pulsePoints);
+  scene.add(group);
+
+  // 코어를 감싸는 3D 링 두 개 — 실제로 기울여서 원근감이 생기게 하고, 서로 다른 방향/속도로 회전
+  function makeRingLine(radius, segments, color, opacity) {
+    const pts = [];
+    for (let i = 0; i <= segments; i++) {
+      const a = (i / segments) * Math.PI * 2;
+      pts.push(new THREE.Vector3(radius * Math.cos(a), radius * Math.sin(a), 0));
+    }
+    return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
+  }
+  function makeRingParticles(radius, count, color, size) {
+    const pos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2;
+      pos[i * 3] = radius * Math.cos(a); pos[i * 3 + 1] = radius * Math.sin(a); pos[i * 3 + 2] = 0;
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    return new THREE.Points(g, new THREE.PointsMaterial({ color, size, transparent: true, opacity: 0.85, sizeAttenuation: true }));
+  }
+
+  const ring1 = new THREE.Group();
+  ring1.add(makeRingLine(76, 110, 0x3FE0FF, 0.5));
+  ring1.add(makeRingParticles(76, 16, 0x3FE0FF, 3.2));
+  ring1.rotation.x = 1.3;
+  ring1.rotation.y = 0.2;
+  scene.add(ring1);
+
+  const ring2 = new THREE.Group();
+  ring2.add(makeRingLine(92, 110, 0xFFA94D, 0.42));
+  ring2.add(makeRingParticles(92, 12, 0xFFA94D, 2.6));
+  ring2.rotation.x = 1.0;
+  ring2.rotation.z = 0.45;
+  scene.add(ring2);
+
+  const nodeBoost = new Float32Array(NODE_COUNT);
+  const pointColorAttr = pointGeom.getAttribute('color');
+  const pulsePosAttr = pulseGeom.getAttribute('position');
+  const pulseColorAttr = pulseGeom.getAttribute('color');
+  const cyan = new THREE.Color('#3FE0FF');
+  const amber = new THREE.Color('#FFA94D');
+
+  function fireNeurons() {
+    for (let k = 0; k < 3; k++) {
+      const i = Math.floor(Math.random() * NODE_COUNT);
+      nodeBoost[i] = 1;
+      currentEdges.forEach(([a, b]) => {
+        if (a !== i && b !== i) return;
+        const to = a === i ? b : a;
+        setTimeout(() => { nodeBoost[to] = Math.max(nodeBoost[to], 0.9); }, 80 + Math.random() * 100);
+      });
+    }
+  }
+  setInterval(fireNeurons, 220);
+
+  // 신호가 실제로 노드 사이를 이동하는 펄스를 주기적으로 발사 (현재 연결된 쌍 중에서 고름)
+  function spawnPulse() {
+    if (!currentEdges.length) return;
+    const slot = pulseData.findIndex(p => !p.active);
+    if (slot === -1) return;
+    const [from, to] = currentEdges[Math.floor(Math.random() * currentEdges.length)];
+    pulseData[slot] = { active: true, from, to, t: 0, speed: 0.018 + Math.random() * 0.022 };
+  }
+  setInterval(spawnPulse, 70);
+
+  let clockTime = 0;
+  function renderLoop() {
+    requestAnimationFrame(renderLoop);
+    clockTime += 0.016;
+    group.rotation.y += 0.005;
+    group.rotation.x += 0.002;
+    ring1.rotation.y += 0.010;
+    ring2.rotation.y -= 0.007;
+
+    // 구체와 링이 함께 커졌다 작아지는 브리딩 펄스 — 커질 땐 진폭 그대로, 작아질 땐 절반만
+    const breathRaw = Math.sin(clockTime * 1.5);
+    const breathAmp = breathRaw >= 0 ? 0.25 : 0.125;
+    const breath = 1 + breathRaw * breathAmp;
+    group.scale.set(breath, breath, breath);
+    ring1.scale.set(breath, breath, breath);
+    ring2.scale.set(breath, breath, breath);
+
+    const active = listening ? amber : cyan;
+
+    // 클러스터별 '무작위로 확 뭉쳤다가 원래 거리로 풀리는' 상태 갱신
+    for (let c = 0; c < CLUSTER_COUNT; c++) {
+      const s = clusterState[c];
+      if (!s.active) { clusterContract[c] = 0; continue; }
+      s.t += 0.016;
+      if (s.t >= CONTRACT_DURATION) { s.active = false; s.t = 0; clusterContract[c] = 0; continue; }
+      clusterContract[c] = Math.sin((s.t / CONTRACT_DURATION) * Math.PI) * CONTRACT_STRENGTH;
+    }
+
+    // 전체 노드가 함께 커졌다 작아지는 펄스(위 브리딩과 동일한 박자·비대칭) + 노드별 무작위 노이즈
+    const pulseAmp = breathRaw >= 0 ? PULSE_AMP : PULSE_AMP * 0.5;
+    const pulse = breathRaw * pulseAmp;
+    for (let i = 0; i < NODE_COUNT; i++) {
+      const base = nodeVecs[i];
+      const noise = Math.sin(clockTime * NOISE_FREQ + nodePhase[i]) * NOISE_AMP;
+      const wobble = pulse + noise;
+      const inv = 1 / base.length();
+      let cx = base.x + base.x * inv * wobble;
+      let cy = base.y + base.y * inv * wobble;
+      let cz = base.z + base.z * inv * wobble;
+
+      // 자기 클러스터가 지금 뭉치는 중이면, 그 클러스터의 고정된 한 지점으로 끌어당김
+      // (각자 다른 반지름이 아니라 같은 지점으로 모이게 해서 실제로 한 덩어리로 뭉치는 게 보이게 함)
+      const ci = nodeClusterIndex[i];
+      if (ci >= 0 && clusterContract[ci] > 0) {
+        const amt = clusterContract[ci];
+        const dir = clusters[ci];
+        const anchorX = dir.x * SPHERE_R, anchorY = dir.y * SPHERE_R, anchorZ = dir.z * SPHERE_R;
+        cx += (anchorX - cx) * amt;
+        cy += (anchorY - cy) * amt;
+        cz += (anchorZ - cz) * amt;
+      }
+
+      currentPos[i].set(cx, cy, cz);
+      pointGeom.attributes.position.setXYZ(i, cx, cy, cz);
+
+      nodeBoost[i] *= 0.9;
+      if (ci >= 0) nodeBoost[i] = Math.max(nodeBoost[i], clusterContract[ci]);
+      const t = nodeBoost[i];
+      pointColorAttr.setXYZ(i,
+        baseColor.r + (active.r - baseColor.r) * t,
+        baseColor.g + (active.g - baseColor.g) * t,
+        baseColor.b + (active.b - baseColor.b) * t
+      );
+    }
+    pointGeom.attributes.position.needsUpdate = true;
+    pointColorAttr.needsUpdate = true;
+
+    // 매 프레임 노드 사이 실제 거리를 다시 재서, 가까운 쌍만 골라 선을 그린다.
+    // 기준 거리 자체를 펄스 단계에 맞춰 늘렸다 줄였다 해서, 구체가 팽창(성장)할 때
+    // 기본 연결에 더해 선이 추가로 생기고, 수축할 때는 기본 연결만 남도록 한다.
+    const pulseFactor = (breathRaw + 1) / 2; // 0(수축)~1(팽창)
+    const dynamicMaxDist = BASE_MAX_DIST + EXTRA_MAX_DIST * pulseFactor;
+    const maxDistSq = dynamicMaxDist * dynamicMaxDist;
+    currentEdges = [];
+    let edgeCount = 0;
+    for (let i = 0; i < NODE_COUNT && edgeCount < MAX_EDGES; i++) {
+      const pa = currentPos[i];
+      for (let j = i + 1; j < NODE_COUNT; j++) {
+        const pb = currentPos[j];
+        const dx = pa.x - pb.x, dy = pa.y - pb.y, dz = pa.z - pb.z;
+        const distSq = dx * dx + dy * dy + dz * dz;
+        if (distSq > maxDistSq) continue;
+
+        const o = edgeCount * 6;
+        linePositions[o] = pa.x; linePositions[o + 1] = pa.y; linePositions[o + 2] = pa.z;
+        linePositions[o + 3] = pb.x; linePositions[o + 4] = pb.y; linePositions[o + 5] = pb.z;
+
+        const t = Math.max(nodeBoost[i], nodeBoost[j]);
+        const r = baseColor.r + (active.r - baseColor.r) * t;
+        const g = baseColor.g + (active.g - baseColor.g) * t;
+        const bch = baseColor.b + (active.b - baseColor.b) * t;
+        lineColorsArr[o] = r; lineColorsArr[o + 1] = g; lineColorsArr[o + 2] = bch;
+        lineColorsArr[o + 3] = r; lineColorsArr[o + 4] = g; lineColorsArr[o + 5] = bch;
+
+        currentEdges.push([i, j]);
+        edgeCount++;
+        if (edgeCount >= MAX_EDGES) break;
+      }
+    }
+    lineGeom.setDrawRange(0, edgeCount * 2);
+    lineGeom.attributes.position.needsUpdate = true;
+    lineGeom.attributes.color.needsUpdate = true;
+
+    // 노드 사이를 이동 중인 신호 펄스 갱신
+    for (let p = 0; p < PULSE_COUNT; p++) {
+      const pd = pulseData[p];
+      if (!pd.active) { pulsePosAttr.setXYZ(p, 9999, 9999, 9999); continue; }
+      pd.t += pd.speed;
+      if (pd.t >= 1) {
+        nodeBoost[pd.to] = 1;
+        pd.active = false;
+        pulsePosAttr.setXYZ(p, 9999, 9999, 9999);
+        continue;
+      }
+      const a = currentPos[pd.from], b = currentPos[pd.to];
+      pulsePosAttr.setXYZ(p, a.x + (b.x - a.x) * pd.t, a.y + (b.y - a.y) * pd.t, a.z + (b.z - a.z) * pd.t);
+      pulseColorAttr.setXYZ(p, active.r, active.g, active.b);
+    }
+    pulsePosAttr.needsUpdate = true;
+    pulseColorAttr.needsUpdate = true;
+
+    renderer.render(scene, camera);
+  }
+  renderLoop();
+
+  // 시계
+  const clock = document.getElementById('clock');
+  function pad(n) { return n.toString().padStart(2, '0'); }
+  function tick() {
+    const now = new Date();
+    clock.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+  }
+  tick(); setInterval(tick, 1000);
+
+  // 마이크 상태
+  const wave = document.getElementById('eqWave');
+  const voiceState = document.getElementById('voiceState');
+  const centerState = document.getElementById('centerState');
+  const coreSvg = document.getElementById('coreSvg');
+  const coreStage = document.getElementById('coreStage');
+  const pulse1 = document.getElementById('pulse1');
+  const pulse2 = document.getElementById('pulse2');
+  let recognition = null;
+  let recognizing = false;
+  // 상시 듣기 모드: 켜져 있으면 한 번의 발화가 끝나도(onend) 자동으로 다시 듣기를 시작한다.
+  let continuousMode = false;
+  // 사용자가 마이크 아이콘을 눌러 "일시정지"한 경우 onend에서 자동 재시작하지 않도록 구분한다
+  // (자연스럽게 침묵으로 끝난 것과 수동으로 멈춘 것을 구별).
+  let manualStopRequested = false;
+
+  // 마이크 아이콘 클릭: 듣는 중이면 멈추고(상시 모드여도 수동으로 멈출 수 있어야 한다),
+  // 아니면 시작한다 — 이때 "상시 듣기" 설정이 켜져 있으면 계속 이어지는 모드로 시작한다.
+  wave.addEventListener('click', () => {
+    if (recognizing) {
+      stopListening();
+    } else {
+      startListening({ continuous: alwaysListenToggle.checked });
+    }
+  });
+
+  function sttLangCode(code) {
+    switch (code) {
+      case 'en': return 'en-US';
+      case 'zh': return 'zh-CN';
+      case 'ja': return 'ja-JP';
+      case 'es': return 'es-ES';
+      default: return 'ko-KR';
+    }
+  }
+
+  // Gemini 호출(특히 일정/리마인더 조회나 웹 검색처럼 함수 호출이 섞이는 경우)이 오래
+  // 걸릴 때, 아무 말 없이 멈춰 있으면 멈춘 것처럼 느껴진다. 짧게 기다리다 응답이 안 오면
+  // "확인해볼게요" 같은 짧은 대사를 먼저 들려주고, 그래도 한참 더 걸리면 조금 더 걸린다는
+  // 안내를 한 번 더 들려줘서 빈 시간을 채운다.
+  const FILLER_PHRASES_SHORT = {
+    ko: ['확인해볼게요.', '잠시만요, 확인하고 있어요.', '네, 바로 찾아볼게요.', '조금만 기다려 주세요, 확인 중이에요.'],
+    en: ['Let me check that.', 'One moment, looking into it.', 'Sure, give me a second.', 'Checking now.'],
+    zh: ['我来确认一下。', '请稍等,正在查看。'],
+    ja: ['確認しますね。', 'ちょっと待ってください、確認中です。'],
+    es: ['Déjame revisarlo.', 'Un momento, estoy comprobando.'],
+  };
+  const FILLER_PHRASES_LONG = {
+    ko: ['생각보다 시간이 조금 걸리네요, 거의 다 됐어요.', '아직 찾고 있어요, 조금만 더 기다려 주세요.'],
+    en: ['This is taking a bit longer than usual, almost there.', 'Still working on it, just a bit more.'],
+    zh: ['比预想的要久一点,马上就好。', '还在查找,请再等一下。'],
+    ja: ['少し時間がかかっていますね、もう少しです。', 'まだ確認中です、少々お待ちください。'],
+    es: ['Esto está tardando un poco más de lo normal, ya casi.', 'Sigo revisándolo, un poco más.'],
+  };
+  function pickFillerPhrase(pool, lang) {
+    const candidates = pool[lang] || pool.ko;
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
+  function isSpeaking() {
+    const ttsPlayerEl = document.getElementById('ttsPlayer');
+    const audioPlaying = ttsPlayerEl && !ttsPlayerEl.paused;
+    const synthSpeaking = window.speechSynthesis && window.speechSynthesis.speaking;
+    return !!(audioPlaying || synthSpeaking);
+  }
+
+  // 브라우저 내장 Web Speech API로 음성 인식(STT)을 수행한다. Chrome/Edge 지원,
+  // Firefox는 미지원이며 이 경우 에러 토스트로 안내한다. 언어는 TTS 언어 선택과 공유한다.
+  // opts.continuous === true면 "상시 듣기" 모드: 한 번 듣고 끝내는 게 아니라, 발화가 끝날
+  // 때마다(onend) 자동으로 다시 듣기 시작해서 버튼 없이도 계속 대화할 수 있게 한다.
+  function startListening(opts) {
+    const continuous = !!(opts && opts.continuous);
+    if (isSpeaking()) {
+      // Lumi가 말하는 중엔 자기 목소리를 자기가 알아듣지 않도록 지금은 시작하지 않고,
+      // 상시 모드라면 말이 끝난 뒤 다시 시도한다(수동 클릭이면 그냥 안내만 하고 끝).
+      if (continuous) {
+        continuousMode = true;
+        setTimeout(() => { if (continuousMode && !recognizing) startListening({ continuous: true }); }, 500);
+        return;
+      }
+      showToast('error', 'MIC BUSY', 'Lumi가 말하는 중에는 음성 인식을 시작할 수 없습니다.');
+      return;
+    }
+    const NativeSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    // 설정에서 '서버 인식'을 고르고 서버가 준비돼 있으면 OpenAI 전사 엔진, 아니면 브라우저 기본 엔진.
+    const SpeechRecognitionImpl = window.LumiServerStt ? window.LumiServerStt.pick(NativeSpeechRecognition) : NativeSpeechRecognition;
+    if (!SpeechRecognitionImpl) {
+      showToast('error', 'STT UNAVAILABLE', '이 브라우저는 음성 인식을 지원하지 않습니다 (Chrome 권장).');
+      return;
+    }
+
+    manualStopRequested = false;
+    continuousMode = continuous;
+
+    recognition = new SpeechRecognitionImpl();
+    recognition.lang = sttLangCode(inputLangSelect.value);
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      consoleInput.value = transcript;
+    };
+
+    recognition.onerror = (event) => {
+      console.error('STT 오류:', event.error);
+      // 상시 듣기 모드에서는 침묵(no-speech)이 흔하게 발생하므로 그때마다 토스트를 띄우지 않는다.
+      if (event.error !== 'no-speech' && event.error !== 'aborted') {
+        showToast('error', 'STT ERROR', '음성 인식 오류: ' + event.error);
+      }
+    };
+
+    // 침묵이 감지되면 브라우저가 자동으로 인식을 종료한다 — 이때 인식된 문장을 바로 전송하고,
+    // 상시 듣기 모드라면(그리고 수동으로 멈춘 게 아니라면) 다시 듣기를 이어간다.
+    recognition.onend = () => {
+      recognizing = false;
+      setActiveVisual(false, 'STANDBY');
+      if (manualStopRequested) {
+        manualStopRequested = false;
+        return;
+      }
+      if (consoleInput.value.trim()) {
+        sendMessage(); // sendMessage가 응답/음성 재생이 끝난 뒤 상시 모드면 다시 듣기를 이어간다.
+        return;
+      }
+      if (continuousMode) {
+        setTimeout(() => { if (continuousMode && !manualStopRequested) startListening({ continuous: true }); }, 400);
+      }
+    };
+
+    try {
+      recognition.start();
+      recognizing = true;
+      setActiveVisual(true, continuous ? 'ALWAYS LISTENING' : 'LISTENING');
+    } catch (err) {
+      console.error('STT 시작 실패:', err);
+      showToast('error', 'STT START FAILED', '음성 인식을 시작하지 못했습니다: ' + err.message);
+    }
+  }
+
+  function stopListening() {
+    manualStopRequested = true;
+    if (recognition) recognition.stop();
+  }
+
+  // 응답을 기다리거나(THINKING) Lumi가 말하는 동안(SPEAKING)은 자기 목소리를 자기가 다시
+  // 알아듣지 않도록 잠깐 멈추고, 끝나면 상시 모드였을 때만 다시 듣기 시작한다.
+  function pauseListeningForResponse() {
+    if (recognizing) stopListening();
+  }
+  function resumeListeningIfContinuous() {
+    if (continuousMode && !recognizing && !isSpeaking()) {
+      setTimeout(() => { if (continuousMode && !recognizing) startListening({ continuous: true }); }, 300);
+    }
+  }
+
+  function setActiveVisual(active, label) {
+    listening = active;
+    wave.classList.toggle('listening', active);
+    voiceState.textContent = active ? (label + '...') : 'STANDBY';
+    voiceState.classList.toggle('listening', active);
+    centerState.textContent = active ? label : 'STANDBY';
+    centerState.classList.toggle('listening', active);
+    coreSvg.classList.toggle('listening', active);
+    coreStage.classList.toggle('listening', active);
+    pulse1.classList.toggle('listening', active);
+    pulse2.classList.toggle('listening', active);
+  }
+
+  // ── 실제 백엔드 연동: Gemini 채팅 + 일정 조회 ──
+  const consoleLog = document.getElementById('consoleLog');
+  const consoleInput = document.getElementById('consoleInput');
+  const consoleSend = document.getElementById('consoleSend');
+  const consoleCheck = document.getElementById('consoleCheck');
+  const consoleCheckSource = document.getElementById('consoleCheckSource');
+  // 마지막으로 고른 검증 근거는 이 브라우저에만 기억한다(저장소를 못 쓰는 환경에서는 기본값 사용).
+  try {
+    const saved = localStorage.getItem('lumi.checkSource');
+    if (saved === 'naver' || saved === 'google' || saved === 'both') consoleCheckSource.value = saved;
+  } catch (e) { /* 무시 */ }
+  consoleCheckSource.addEventListener('change', () => {
+    try { localStorage.setItem('lumi.checkSource', consoleCheckSource.value); } catch (e) { /* 무시 */ }
+  });
+  const consoleTag = document.getElementById('consoleTag');
+  const schedList = document.getElementById('schedList');
+  const schedCount = document.getElementById('schedCount');
+  const alertCard = document.getElementById('alertCard');
+  const alertBody = document.getElementById('alertBody');
+  const usageReadout = document.getElementById('usageReadout');
+  const usageBarChart = document.getElementById('usageBarChart');
+  const usageBarLabels = document.getElementById('usageBarLabels');
+  const toastContainer = document.getElementById('toastContainer');
+
+  const toastRegistry = {};
+
+  // key로 슬롯을 하나만 유지한다: 실패하면 그 슬롯을 계속 띄워두고(안 사라짐),
+  // 이후 성공하면 같은 슬롯을 성공 메시지로 바꾼 뒤 잠시 후 스스로 사라진다.
+  // 처음부터 성공(이전에 에러 표시가 없었던 경우)이면 굳이 토스트를 띄우지 않는다.
+  function upsertToast(key, status, title, detail) {
+    let toast = toastRegistry[key];
+    if (status === 'success' && !toast) return;
+
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'toast';
+      const titleEl = document.createElement('span');
+      titleEl.className = 'toast-title';
+      const bodyEl = document.createElement('span');
+      bodyEl.className = 'toast-body';
+      toast.appendChild(titleEl);
+      toast.appendChild(bodyEl);
+      toastContainer.appendChild(toast);
+      toastRegistry[key] = toast;
+    }
+
+    toast.classList.toggle('toast-success', status === 'success');
+    toast.querySelector('.toast-title').textContent = title;
+    toast.querySelector('.toast-body').textContent = detail;
+
+    if (toast._dismissTimer) clearTimeout(toast._dismissTimer);
+
+    if (status === 'success') {
+      toast._dismissTimer = setTimeout(() => {
+        toast.style.animation = 'toast-out 0.25s ease-in forwards';
+        setTimeout(() => {
+          toast.remove();
+          delete toastRegistry[key];
+        }, 250);
+      }, 3000);
+    }
+    // 실패 상태는 타이머를 걸지 않는다 — 다음 재조회가 성공할 때까지 화면에 고정.
+  }
+
+  // upsertToast와 달리 슬롯을 유지하지 않는 1회성 알림 — STT처럼 폴링이 아니라
+  // 사용자 행동으로 한 번 발생하는 이벤트에 사용한다. 일정 시간 후 항상 사라진다.
+  function showToast(status, title, detail, durationMs) {
+    const toast = document.createElement('div');
+    toast.className = 'toast' + (status === 'success' ? ' toast-success' : '');
+    const titleEl = document.createElement('span');
+    titleEl.className = 'toast-title';
+    titleEl.textContent = title;
+    const bodyEl = document.createElement('span');
+    bodyEl.className = 'toast-body';
+    bodyEl.textContent = detail;
+    toast.appendChild(titleEl);
+    toast.appendChild(bodyEl);
+    toastContainer.appendChild(toast);
+    setTimeout(() => {
+      toast.style.animation = 'toast-out 0.25s ease-in forwards';
+      setTimeout(() => toast.remove(), 250);
+    }, durationMs || 4000);
+  }
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsModal = document.getElementById('settingsModal');
+  const settingsClose = document.getElementById('settingsClose');
+  const inputLangSelect = document.getElementById('inputLangSelect');
+  const responseLangSelect = document.getElementById('responseLangSelect');
+  const voiceGenderSelect = document.getElementById('voiceGenderSelect');
+  const alwaysListenToggle = document.getElementById('alwaysListenToggle');
+  const emotionLogToggle = document.getElementById('emotionLogToggle');
+  const proactiveCareToggle = document.getElementById('proactiveCareToggle');
+  const ttsToggle = document.getElementById('ttsToggle');
+  const ttsPlayer = document.getElementById('ttsPlayer');
+  let ttsEnabled = true;
+
+  // 설정(입력/답변 언어, 음성 성별, TTS on/off, 상시 듣기)을 로그인 계정에 귀속해 서버(DB)에
+  // 저장한다(/api/settings) — 브라우저 localStorage가 아니라서 다른 기기/브라우저에서
+  // 로그인해도, 서버를 재시작해도 그대로 유지된다.
+  function saveSettings() {
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+      body: JSON.stringify({
+        inputLang: inputLangSelect.value,
+        responseLang: responseLangSelect.value,
+        voiceGender: voiceGenderSelect.value,
+        ttsEnabled,
+        alwaysListening: alwaysListenToggle.checked,
+        emotionLogEnabled: emotionLogToggle.checked,
+        proactiveCareEnabled: proactiveCareToggle.checked,
+      }),
+    }).catch(() => {
+      // 저장 실패해도 대화 자체엔 영향 없음 — 조용히 무시
+    });
+  }
+
+  // 인사말이 저장된 답변 언어를 바로 반영하도록, initGreeting()이 이 로딩이 끝날 때까지
+  // 기다릴 수 있게 프로미스를 변수로 남겨둔다.
+  const settingsReady = (async function loadSettings() {
+    try {
+      const res = await fetch('/api/settings');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.inputLang) inputLangSelect.value = data.inputLang;
+        if (data.responseLang) responseLangSelect.value = data.responseLang;
+        if (data.voiceGender) voiceGenderSelect.value = data.voiceGender;
+        if (typeof data.ttsEnabled === 'boolean') ttsEnabled = data.ttsEnabled;
+        if (typeof data.alwaysListening === 'boolean') alwaysListenToggle.checked = data.alwaysListening;
+        if (typeof data.emotionLogEnabled === 'boolean') emotionLogToggle.checked = data.emotionLogEnabled;
+        if (typeof data.proactiveCareEnabled === 'boolean') proactiveCareToggle.checked = data.proactiveCareEnabled;
+        ttsToggle.textContent = ttsEnabled ? '🔊' : '🔇';
+        ttsToggle.classList.toggle('muted', !ttsEnabled);
+      }
+    } catch {
+      // 서버에서 못 불러와도 기본값으로 계속 진행
+    }
+  })();
+
+  inputLangSelect.addEventListener('change', saveSettings);
+  // 음성 인식 엔진 선택(이 브라우저에만 저장). '서버 인식'은 서버에 OPENAI_API_KEY가 있어야 켜진다.
+  const sttEngineSelect = document.getElementById('sttEngineSelect');
+  if (sttEngineSelect && window.LumiServerStt) {
+    sttEngineSelect.value = window.LumiServerStt.getEngine();
+    sttEngineSelect.addEventListener('change', async () => {
+      window.LumiServerStt.setEngine(sttEngineSelect.value);
+      if (sttEngineSelect.value !== 'server') return;
+      const ok = await window.LumiServerStt.refreshStatus();
+      if (ok) showToast('success', 'STT', '서버 음성 인식(OpenAI)으로 바꿨어요.');
+      else showToast('error', 'STT', '서버 음성 인식을 쓸 수 없어요(서버의 OPENAI_API_KEY 확인). 브라우저 인식으로 계속 동작해요.');
+    });
+  }
+  responseLangSelect.addEventListener('change', saveSettings);
+  voiceGenderSelect.addEventListener('change', saveSettings);
+  emotionLogToggle.addEventListener('change', () => { saveSettings(); refreshMood(); });
+  proactiveCareToggle.addEventListener('change', saveSettings);
+
+  // 체크박스를 직접 클릭하는 행위 자체가 "사용자 상호작용"이라, 그 안에서 바로
+  // recognition.start()를 호출해도 브라우저 정책에 막히지 않는다.
+  alwaysListenToggle.addEventListener('change', () => {
+    saveSettings();
+    if (alwaysListenToggle.checked) {
+      if (!isSpeaking()) startListening({ continuous: true });
+    } else {
+      continuousMode = false;
+      if (recognizing) stopListening();
+    }
+  });
+
+  settingsBtn.addEventListener('click', () => settingsModal.classList.add('open'));
+  settingsClose.addEventListener('click', () => settingsModal.classList.remove('open'));
+  settingsModal.addEventListener('click', (e) => {
+    if (e.target === settingsModal) settingsModal.classList.remove('open');
+  });
+
+  // AI가 실제로 어떤 언어로 답해야 하는지: '자동'이면 사용자가 말한/입력한 언어를 그대로 따르고,
+  // 명시적으로 고르면 그 언어로 고정한다. /api/chat에 힌트로 실어 보낸다.
+  function getResponseLanguage() {
+    const setting = responseLangSelect.value;
+    return setting === 'auto' ? null : setting;
+  }
+
+  // TTS 재생에 쓸 실제 언어 — 답변 언어가 고정돼 있으면 그 언어, 자동이면 입력 언어를 따른다.
+  function getEffectiveTtsLang() {
+    const setting = responseLangSelect.value;
+    return setting === 'auto' ? inputLangSelect.value : setting;
+  }
+
+  let cachedVoices = [];
+  function refreshVoiceCache() {
+    if (window.speechSynthesis) cachedVoices = window.speechSynthesis.getVoices();
+  }
+  if (window.speechSynthesis) {
+    refreshVoiceCache();
+    window.speechSynthesis.onvoiceschanged = refreshVoiceCache;
+  }
+
+  // OS/브라우저에 설치된 음성 중, 언어가 맞고 이름에서 성별을 유추할 수 있는 걸 고른다.
+  // 완벽하진 않다 — 음성 목록이 플랫폼마다 달라서, 못 찾으면 그 언어의 첫 번째 음성을 쓴다.
+  function pickBrowserVoice(langCode, gender) {
+    if (!cachedVoices.length) refreshVoiceCache();
+    const prefix = langCode.split('-')[0].toLowerCase();
+    const candidates = cachedVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith(prefix));
+    if (!candidates.length) return null;
+    const femaleHints = ['female', 'yuna', 'heami', 'nara', '여성', 'samantha', 'zira', 'susan', 'aria'];
+    const maleHints = ['male', 'injoon', 'daniel', 'david', '남성', 'fred', 'alex', 'guy'];
+    const hints = gender === 'male' ? maleHints : femaleHints;
+    const match = candidates.find(v => hints.some(h => v.name.toLowerCase().includes(h)));
+    return match || candidates[0];
+  }
+
+  ttsToggle.addEventListener('click', () => {
+    ttsEnabled = !ttsEnabled;
+    ttsToggle.textContent = ttsEnabled ? '🔊' : '🔇';
+    ttsToggle.classList.toggle('muted', !ttsEnabled);
+    if (!ttsEnabled) {
+      ttsPlayer.pause();
+      window.speechSynthesis.cancel();
+    }
+    saveSettings();
+  });
+
+  function resetSpeakingVisual() {
+    setActiveVisual(false, 'LISTENING');
+  }
+  ttsPlayer.addEventListener('ended', resetSpeakingVisual);
+  ttsPlayer.addEventListener('pause', resetSpeakingVisual);
+
+  // 브라우저 내장 음성합성(Web Speech API) — Fish Audio가 실패하거나 미설정일 때의
+  // 폴백 경로. 서버 호출도, 키도 필요 없어 항상 동작한다.
+  // 재생이 "끝날 때" resolve하는 프로미스를 반환한다 — 상시 듣기 모드가 Lumi의 말이
+  // 완전히 끝난 뒤에만 마이크를 다시 켜도록 하기 위해 필요하다.
+  function speakBrowser(text) {
+    return new Promise((resolve) => {
+      if (!window.speechSynthesis) {
+        console.error('이 브라우저는 음성 합성을 지원하지 않습니다.');
+        resolve();
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const langCode = sttLangCode(getEffectiveTtsLang());
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = langCode;
+      const voice = pickBrowserVoice(langCode, voiceGenderSelect.value);
+      if (voice) utterance.voice = voice;
+      utterance.onstart = () => setActiveVisual(true, 'SPEAKING');
+      utterance.onend = () => { resetSpeakingVisual(); resolve(); };
+      utterance.onerror = (event) => {
+        console.error('TTS 재생 실패:', event.error);
+        resetSpeakingVisual();
+        // 자동재생 정책으로 막힌 경우: 버리지 않고 첫 조작 때 다시 읽는다.
+        if (event.error === 'not-allowed' && !blockedSpeech) blockedSpeech = { text, url: null };
+        resolve();
+      };
+      window.speechSynthesis.speak(utterance);
+    });
+  }
+
+  // Lumi의 답변을 우선 Fish Audio로 합성해서 재생하고, 키가 없거나 호출이 실패하면
+  // 조용히 브라우저 내장 음성합성으로 넘어간다 — 어느 쪽이든 대화 자체는 끊기지 않는다.
+  // 재생이 "시작"할 때가 아니라 "끝날 때" 끝나는 프로미스를 반환한다(상시 듣기 모드에서
+  // Lumi 자신의 목소리를 다시 알아듣지 않도록, 말이 다 끝난 뒤에만 마이크를 재개해야 한다).
+  // 새로고침 직후처럼 사용자 조작 전이라 브라우저가 소리 재생을 막은 경우, 못 읽은 첫 발화를
+  // 보관해 두었다가 첫 클릭/키 입력 때 읽어 준다. (Fish Audio 합성본은 다시 요청하지 않고 그대로 재생)
+  let blockedSpeech = null;
+
+  async function playTtsUrl(url) {
+    ttsPlayer.src = url;
+    setActiveVisual(true, 'SPEAKING');
+    await ttsPlayer.play();
+    await new Promise((resolve) => {
+      const onDone = () => {
+        ttsPlayer.removeEventListener('ended', onDone);
+        ttsPlayer.removeEventListener('pause', onDone);
+        resolve();
+      };
+      ttsPlayer.addEventListener('ended', onDone);
+      ttsPlayer.addEventListener('pause', onDone);
+    });
+  }
+
+  // Lumi 목소리는 Fish Audio 하나만 쓴다. true로 바꾸면 Fish가 실패했을 때 브라우저 음성으로 대신 읽는다.
+  const ALLOW_BROWSER_VOICE = false;
+  let ttsToastAt = 0;
+  function notifyTtsFailure() {
+    const now = Date.now();
+    if (now - ttsToastAt < 15000) return; // 연달아 실패해도 알림은 15초에 한 번만
+    ttsToastAt = now;
+    showToast('error', 'TTS', 'Fish Audio 음성을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+  }
+
+  async function speak(text) {
+    if (!ttsEnabled || !text) return;
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        body: JSON.stringify({
+          text,
+          language: getEffectiveTtsLang(),
+          gender: voiceGenderSelect.value
+        })
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        try {
+          await playTtsUrl(url);
+        } catch (playErr) {
+          if (playErr && playErr.name === 'NotAllowedError') {
+            resetSpeakingVisual();
+            if (!blockedSpeech) blockedSpeech = { text, url };
+            return;
+          }
+          throw playErr;
+        }
+        return;
+      }
+    } catch (err) {
+      console.error('Fish Audio TTS 실패:', err);
+    }
+    if (ALLOW_BROWSER_VOICE) { await speakBrowser(text); return; }
+    resetSpeakingVisual();
+    notifyTtsFailure();
+  }
+
+  // speak()를 여러 군데(실제 답변, 채움 대사, 알림)에서 겹쳐 호출할 수 있으므로, 재생
+  // 순서를 하나의 줄로 직렬화한다 — 안 그러면 나중 호출이 재생 중이던 오디오 엘리먼트의
+  // src를 덮어써서 앞 소리가 끊기거나 섞여버린다. 반환하는 프로미스는 "이 텍스트"의
+  // 재생이 끝나는 시점에 resolve된다.
+  let speechQueue = Promise.resolve();
+  function enqueueSpeak(text) {
+    const run = () => speak(text);
+    const result = speechQueue.then(run, run);
+    speechQueue = result;
+    return result;
+  }
+
+  const EMOTION_LABEL_KO = {
+    happy: '행복', energetic: '활기참', calm: '차분함', sad: '슬픔',
+    angry: '화남', dreamy: '몽환적', romantic: '설렘', melancholy: '우울'
+  };
+
+  function appendLog(sender, text, image) {
+    const row = document.createElement('div');
+    row.className = 'log-row log-' + sender;
+    const tag = document.createElement('span');
+    tag.className = 'log-tag';
+    tag.textContent = sender === 'user' ? 'YOU' : (sender === 'check' ? 'CHECK' : 'LUMI');
+    const body = document.createElement('span');
+    body.className = 'log-text';
+    body.textContent = text;
+    row.appendChild(tag);
+    row.appendChild(body);
+    if (image) {
+      const thumb = document.createElement('img');
+      thumb.className = 'log-thumb';
+      thumb.alt = '첨부한 이미지';
+      thumb.src = image; // 우리가 canvas로 만든 data:image/jpeg URL만 들어온다
+      row.appendChild(thumb);
+    }
+    consoleLog.appendChild(row);
+    consoleLog.scrollTop = consoleLog.scrollHeight;
+    return row;
+  }
+
+  // 외국어 답변이면 한국어 번역을 화면에만 덧붙인다(음성으로는 읽지 않는다). 번역은 별도 요청이라
+  // 영어 답변을 말하는 속도에는 영향이 없고, 실패하면 조용히 없앤다.
+  async function requestTranslation(row, text) {
+    const ko = document.createElement('div');
+    ko.className = 'log-row log-ko';
+    const tag = document.createElement('span');
+    tag.className = 'log-tag';
+    tag.textContent = 'KO';
+    const body = document.createElement('span');
+    body.className = 'log-text pending';
+    body.textContent = '번역 중…';
+    ko.appendChild(tag);
+    ko.appendChild(body);
+    row.after(ko); // 링크 카드가 있으면 그 앞, Lumi 답변 바로 아래
+    consoleLog.scrollTop = consoleLog.scrollHeight;
+    // 번역 모델이 잠깐 바쁠 때(502/503)를 위해 3번까지 다시 시도한다. 400대(없음·한도)는 다시 해도 같으므로 바로 멈춘다.
+    let translation = null;
+    for (let attempt = 1; attempt <= 3 && !translation; attempt++) {
+      try {
+        const res = await fetch('/api/chat/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+          body: JSON.stringify({ text }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && typeof data.translation === 'string' && data.translation) translation = data.translation;
+          break;
+        }
+        if (res.status >= 400 && res.status < 500) break;
+      } catch (e) { /* 네트워크 오류 → 재시도 */ }
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 1200 * attempt));
+    }
+    body.className = 'log-text';
+    body.textContent = translation || '번역을 불러오지 못했어요.'; // textContent라 번역문이 HTML로 해석되지 않는다
+    consoleLog.scrollTop = consoleLog.scrollHeight;
+  }
+
+  // ── 이미지 첨부 ──
+  // 브라우저에서 먼저 줄이고 JPEG로 다시 그려서 보낸다(EXIF 위치·기기 정보가 나가지 않고 전송량도 줄어든다).
+  // 서버도 같은 검증을 다시 한다.
+  const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const IMAGE_MAX_INPUT = 12 * 1024 * 1024;
+  const IMAGE_MAX_SIDE = 512;
+  const IMAGE_MAX_OUTPUT = 2.5 * 1024 * 1024;
+  let pendingImage = null; // { base64, mime, previewUrl, name }
+  const attachFile = document.getElementById('attachFile');
+  const attachBtn = document.getElementById('attachBtn');
+  const attachPreview = document.getElementById('attachPreview');
+  const attachThumb = document.getElementById('attachThumb');
+  const attachName = document.getElementById('attachName');
+  const attachRemove = document.getElementById('attachRemove');
+
+  function drawScaled(source, maxSide) {
+    const ratio = Math.min(1, maxSide / Math.max(source.width, source.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(source.width * ratio));
+    canvas.height = Math.max(1, Math.round(source.height * ratio));
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff'; // 투명 배경은 흰색으로
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  }
+
+  function loadBitmap(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지를 읽을 수 없습니다.')); };
+      img.src = url;
+    });
+  }
+
+  async function prepareImage(file) {
+    if (!file || !IMAGE_TYPES.includes(file.type)) throw new Error('JPG, PNG, GIF, WEBP 이미지만 올릴 수 있습니다.');
+    if (file.size > IMAGE_MAX_INPUT) throw new Error('이미지가 너무 큽니다. 12MB 이하로 올려주세요.');
+    const bitmap = await loadBitmap(file);
+    const canvas = drawScaled(bitmap, IMAGE_MAX_SIDE);
+    let base64 = null;
+    for (const quality of [0.85, 0.7, 0.55]) {
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      const candidate = dataUrl.slice(dataUrl.indexOf(',') + 1);
+      if (candidate.length * 0.75 <= IMAGE_MAX_OUTPUT) { base64 = candidate; break; }
+    }
+    if (!base64) throw new Error('이미지가 너무 큽니다. 더 작은 이미지를 올려주세요.');
+    const thumb = drawScaled(bitmap, 160).toDataURL('image/jpeg', 0.7);
+    return { base64, mime: 'image/jpeg', previewUrl: thumb, name: file.name || '이미지' };
+  }
+
+  function showPendingImage() {
+    if (pendingImage) {
+      attachThumb.src = pendingImage.previewUrl;
+      attachName.textContent = pendingImage.name;
+      attachPreview.hidden = false;
+    } else {
+      attachPreview.hidden = true;
+      attachThumb.removeAttribute('src');
+    }
+  }
+
+  async function attachImage(file) {
+    try {
+      pendingImage = await prepareImage(file);
+      showPendingImage();
+    } catch (err) {
+      showToast('error', 'IMAGE', err.message);
+    }
+  }
+
+  attachBtn.addEventListener('click', () => attachFile.click());
+  attachFile.addEventListener('change', () => {
+    const file = attachFile.files && attachFile.files[0];
+    attachFile.value = '';
+    if (file) attachImage(file);
+  });
+  attachRemove.addEventListener('click', () => { pendingImage = null; showPendingImage(); });
+  // 스크린샷을 Ctrl+V로 붙여넣기
+  consoleInput.addEventListener('paste', (e) => {
+    const item = Array.from((e.clipboardData && e.clipboardData.items) || [])
+      .find((i) => i.kind === 'file' && i.type.startsWith('image/'));
+    if (item) { e.preventDefault(); attachImage(item.getAsFile()); }
+  });
+  // 끌어다 놓기
+  const consolePanel = document.querySelector('.console-panel');
+  consolePanel.addEventListener('dragover', (e) => { e.preventDefault(); consolePanel.classList.add('dragging'); });
+  consolePanel.addEventListener('dragleave', () => consolePanel.classList.remove('dragging'));
+  consolePanel.addEventListener('drop', (e) => {
+    e.preventDefault();
+    consolePanel.classList.remove('dragging');
+    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) attachImage(file);
+  });
+
+  // 유튜브 영상·구글 검색 출처를 답변 아래에 클릭 가능한 카드로 보여준다.
+  // 서버가 https 링크만 내려주지만, 화면에서도 한 번 더 확인하고 textContent로만 채운다.
+  function appendLinks(links) {
+    if (!Array.isArray(links) || !links.length) return;
+    const box = document.createElement('div');
+    box.className = 'log-links';
+    links.forEach((l) => {
+      if (!l || typeof l.url !== 'string' || !l.url.startsWith('https://')) return;
+      const a = document.createElement('a');
+      a.className = 'log-link';
+      a.href = l.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      const kind = document.createElement('span');
+      kind.className = 'log-link-kind';
+      kind.textContent = l.kind === 'youtube' ? 'YOUTUBE' : 'SOURCE';
+      const title = document.createElement('span');
+      title.textContent = l.title || l.url;
+      a.appendChild(kind);
+      a.appendChild(title);
+      if (l.subtitle) {
+        const sub = document.createElement('span');
+        sub.className = 'log-link-sub';
+        sub.textContent = l.subtitle;
+        a.appendChild(sub);
+      }
+      box.appendChild(a);
+    });
+    if (box.children.length) {
+      consoleLog.appendChild(box);
+      consoleLog.scrollTop = consoleLog.scrollHeight;
+    }
+  }
+
+  // 사용자가 보낸 메시지 옆에, 감정 분석 모델로 분석된 그 메시지의 감정을 작은 배지로 붙인다.
+  function attachEmotionBadge(row, emotion) {
+    if (!row || !emotion || !emotion.primaryEmotion) return;
+    const badge = document.createElement('span');
+    // 기분의 방향(valence)에 따라 배지 색을 나눈다: 긍정 pos / 중립 neu / 부정 neg
+    const v = typeof emotion.valence === 'number' ? emotion.valence : 0;
+    badge.className = 'log-emotion ' + (v >= 0.2 ? 'pos' : v <= -0.2 ? 'neg' : 'neu');
+    let label = EMOTION_LABEL_KO[emotion.primaryEmotion] || emotion.primaryEmotion;
+    if (typeof emotion.confidence === 'number') {
+      label += ' ' + Math.round(emotion.confidence * 100) + '%';
+    }
+    badge.textContent = label;
+    row.appendChild(badge);
+  }
+
+  // 답변에 실제로 반영한 감정 톤(예: "공감 먼저, 차분하게")을 Lumi 답변 옆에 작게 보여준다.
+  function attachToneLabel(row, emotion) {
+    if (!row || !emotion || typeof emotion.toneLabel !== 'string' || !emotion.toneLabel) return;
+    const chip = document.createElement('span');
+    chip.className = 'log-tone';
+    chip.title = '감정 분석 결과를 반영해 조절한 답변 톤';
+    chip.textContent = emotion.toneLabel;
+    row.appendChild(chip);
+  }
+
+  async function callChat(message, image) {
+    const res = await fetch(image ? '/api/chat/image' : '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+      body: JSON.stringify(image
+        ? { message, responseLanguage: getResponseLanguage(), imageBase64: image.base64, imageMime: image.mime }
+        : { message, responseLanguage: getResponseLanguage() })
+    });
+    if (!res.ok) {
+      // 서버의 검증 실패(400)·너무 큰 요청(413)·요청 과다(429) 메시지는 사용자에게 그대로 보여준다.
+      let serverMessage = null;
+      if (res.status === 400 || res.status === 413 || res.status === 429) {
+        const body = await res.json().catch(() => null);
+        serverMessage = body && typeof body.error === 'string' ? body.error : null;
+      }
+      const err = new Error('HTTP ' + res.status);
+      err.userMessage = serverMessage;
+      throw err;
+    }
+    return await res.json(); // { reply, emotion }
+  }
+
+  // ── 감정 시계열(MOOD · 7 DAYS) / 지식 노트(MEMORY NOTES) ──
+  // 화면 갱신용 조회라서 성공 토스트는 띄우지 않는다(대화마다 뜨면 방해).
+  const moodChart = document.getElementById('moodChart');
+  const moodLabels = document.getElementById('moodLabels');
+  const moodEmpty = document.getElementById('moodEmpty');
+  const moodAvgTag = document.getElementById('moodAvgTag');
+  const noteList = document.getElementById('noteList');
+  const noteForm = document.getElementById('noteForm');
+  const noteInput = document.getElementById('noteInput');
+  const noteCountTag = document.getElementById('noteCountTag');
+  const noteClearAll = document.getElementById('noteClearAll');
+
+  function signed(v) { return (v > 0 ? '+' : '') + v.toFixed(2); }
+
+  function renderMood(days) {
+    moodChart.innerHTML = '';
+    moodLabels.innerHTML = '';
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let total = 0, weighted = 0;
+    days.forEach((d) => {
+      const col = document.createElement('div');
+      col.className = 'mood-col' + (d.date === todayStr ? ' today' : '');
+      const bar = document.createElement('div');
+      if (d.count === 0) {
+        bar.className = 'mood-bar none';
+        col.title = d.date + ' · 기록 없음';
+      } else {
+        const v = d.avgValence;
+        bar.className = 'mood-bar ' + (v >= 0 ? 'pos' : 'neg');
+        bar.style.height = Math.max(6, Math.round(Math.min(1, Math.abs(v)) * 50)) + '%';
+        col.title = d.date + ' · 평균 ' + signed(v) + ' · ' + d.count + '회' + (d.topMood ? ' · ' + d.topMood : '');
+        total += d.count;
+        weighted += v * d.count;
+      }
+      col.appendChild(bar);
+      moodChart.appendChild(col);
+      const label = document.createElement('span');
+      label.textContent = d.label;
+      moodLabels.appendChild(label);
+    });
+    moodAvgTag.textContent = total ? signed(weighted / total) : '—';
+    moodEmpty.style.display = total ? 'none' : '';
+    moodEmpty.textContent = emotionLogToggle.checked ? '대화하면 감정 흐름이 여기에 쌓여요' : '감정 기록이 꺼져 있어요(설정에서 켤 수 있어요)';
+  }
+
+  // ── SECURITY STATUS: 본인 계정의 최근 24시간 탐지·차단 요약 + 켜진 방어 장치 ──
+  const secBadge = document.getElementById('secBadge');
+  const secHeadline = document.getElementById('secHeadline');
+  const secCats = document.getElementById('secCats');
+  const secDetail = document.getElementById('secDetail');
+  const secSummary = document.getElementById('secSummary');
+  const secProtections = document.getElementById('secProtections');
+  const secRecent = document.getElementById('secRecent');
+
+  const secToggle = document.getElementById('secToggle');
+  const secBody = document.getElementById('secBody');
+  const secArrow = document.getElementById('secArrow');
+  function setSecOpen(open, persist) {
+    secBody.hidden = !open;
+    secArrow.textContent = open ? '▾' : '▸';
+    secToggle.setAttribute('aria-expanded', String(open));
+    secToggle.title = open ? '접기' : '펼치기';
+    if (persist) { try { localStorage.setItem('lumi.secOpen', open ? '1' : '0'); } catch (e) { /* 저장 불가면 이번 화면에서만 유지 */ } }
+  }
+  let secOpenInit = false;
+  try { secOpenInit = localStorage.getItem('lumi.secOpen') === '1'; } catch (e) { /* 기본값: 접힘 */ }
+  setSecOpen(secOpenInit, false);
+  secToggle.addEventListener('click', () => setSecOpen(secBody.hidden, true));
+  secToggle.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSecOpen(secBody.hidden, true); }
+  });
+
+  function secTime(iso) {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const z = (n) => String(n).padStart(2, '0');
+    return z(d.getMonth() + 1) + '/' + z(d.getDate()) + ' ' + z(d.getHours()) + ':' + z(d.getMinutes());
+  }
+
+  function renderSecurity(s) {
+    // 서버 문자열은 전부 textContent로만 넣는다(HTML로 해석되지 않음)
+    const level = ['SECURE', 'NOTICE', 'ALERT'].includes(s.level) ? s.level : 'UNKNOWN';
+    secBadge.className = 'sec-badge ' + level.toLowerCase();
+    secBadge.textContent = level === 'UNKNOWN' ? '—' : level;
+    secHeadline.textContent = s.headline || '';
+    secCats.innerHTML = '';
+    (s.categories || []).forEach((c) => {
+      const chip = document.createElement('span');
+      chip.className = 'sec-chip';
+      chip.textContent = c.label;
+      const b = document.createElement('b');
+      b.textContent = String(c.count);
+      chip.appendChild(b);
+      secCats.appendChild(chip);
+    });
+    const prots = s.protections || [];
+    secSummary.textContent = '방어 장치 ' + prots.filter((p) => p.on).length + '/' + prots.length + ' 작동 중';
+    secProtections.innerHTML = '';
+    prots.forEach((p) => {
+      const row = document.createElement('div');
+      row.className = 'sec-prot';
+      const nm = document.createElement('span');
+      nm.className = 'nm';
+      nm.textContent = p.label;
+      const nt = document.createElement('span');
+      nt.className = 'nt';
+      nt.textContent = p.note || '';
+      nm.appendChild(nt);
+      const st = document.createElement('span');
+      st.className = 'st ' + (p.on ? 'on' : 'off');
+      st.textContent = p.on ? 'ON' : 'OFF';
+      row.appendChild(nm);
+      row.appendChild(st);
+      secProtections.appendChild(row);
+    });
+    secRecent.innerHTML = '';
+    const recent = s.recent || [];
+    if (recent.length) {
+      const h = document.createElement('div');
+      h.className = 'sec-recent';
+      h.style.marginTop = '8px';
+      h.textContent = '최근 기록';
+      secRecent.appendChild(h);
+    }
+    recent.forEach((r) => {
+      const row = document.createElement('div');
+      row.className = 'sec-recent';
+      const a = document.createElement('span');
+      a.textContent = r.label;
+      const t = document.createElement('span');
+      t.textContent = secTime(r.occurredAt);
+      row.appendChild(a);
+      row.appendChild(t);
+      secRecent.appendChild(row);
+    });
+    secDetail.style.display = '';
+  }
+
+  async function refreshSecurity() {
+    try {
+      const res = await fetch('/api/security/status');
+      if (!res.ok) return;
+      renderSecurity(await res.json());
+    } catch (err) {
+      console.error('보안 상태 조회 실패:', err);
+    }
+  }
+  setInterval(refreshSecurity, 60000); // 대화 없이도 바뀔 수 있어(세션 만료 등) 1분마다 갱신
+
+  async function refreshMood() {
+    try {
+      const res = await fetch('/api/emotions/daily?days=7');
+      if (!res.ok) return;
+      renderMood((await res.json()).days || []);
+    } catch (err) {
+      console.error('감정 기록 조회 실패:', err);
+    }
+  }
+
+  function renderNotes(notes) {
+    noteList.innerHTML = '';
+    noteCountTag.textContent = notes.length + ' / 50';
+    noteClearAll.style.display = notes.length ? '' : 'none';
+    if (!notes.length) {
+      const empty = document.createElement('div');
+      empty.className = 'mood-empty';
+      empty.style.marginTop = '0';
+      empty.textContent = '"~기억해 줘"라고 말하거나 아래에 직접 추가하세요';
+      noteList.appendChild(empty);
+      return;
+    }
+    notes.forEach((n) => {
+      const row = document.createElement('div');
+      row.className = 'note-row';
+      const text = document.createElement('span');
+      text.className = 'note-text';
+      text.textContent = n.content; // textContent라 노트 내용이 HTML로 해석되지 않는다
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'note-del';
+      del.title = '이 노트 삭제';
+      del.textContent = '✕';
+      del.addEventListener('click', () => deleteNote(n.id));
+      row.appendChild(text);
+      row.appendChild(del);
+      noteList.appendChild(row);
+    });
+  }
+
+  async function refreshNotes() {
+    try {
+      const res = await fetch('/api/notes');
+      if (!res.ok) return;
+      renderNotes((await res.json()).notes || []);
+    } catch (err) {
+      console.error('노트 조회 실패:', err);
+    }
+  }
+
+  async function deleteNote(id) {
+    try {
+      const res = await fetch('/api/notes/' + encodeURIComponent(id), {
+        method: 'DELETE', headers: { 'X-XSRF-TOKEN': getCsrfToken() },
+      });
+      if (!res.ok) showToast('error', 'NOTE', '노트를 삭제하지 못했습니다.');
+    } catch (err) {
+      console.error('노트 삭제 실패:', err);
+    }
+    refreshNotes();
+  }
+
+  noteForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const content = noteInput.value.trim();
+    if (!content) return;
+    try {
+      const res = await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCsrfToken() },
+        body: JSON.stringify({ content }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast('error', 'NOTE', data.error || '노트를 저장하지 못했습니다.');
+        return;
+      }
+      noteInput.value = '';
+      refreshNotes();
+    } catch (err) {
+      console.error('노트 저장 실패:', err);
+      showToast('error', 'NOTE', '노트를 저장하지 못했습니다.');
+    }
+  });
+
+  noteClearAll.addEventListener('click', async () => {
+    if (!window.confirm('노트를 모두 삭제할까요?')) return;
+    try {
+      await fetch('/api/notes', { method: 'DELETE', headers: { 'X-XSRF-TOKEN': getCsrfToken() } });
+    } catch (err) {
+      console.error('노트 전체 삭제 실패:', err);
+    }
+    refreshNotes();
+  });
+
+  document.getElementById('moodClearBtn').addEventListener('click', async () => {
+    if (!window.confirm('감정 기록을 모두 삭제할까요?')) return;
+    try {
+      const res = await fetch('/api/emotions', { method: 'DELETE', headers: { 'X-XSRF-TOKEN': getCsrfToken() } });
+      if (res.ok) showToast('success', 'MOOD', '감정 기록을 모두 삭제했습니다.');
+    } catch (err) {
+      console.error('감정 기록 삭제 실패:', err);
+    }
+    refreshMood();
+  });
+
+  async function refreshSchedules() {
+    try {
+      const res = await fetch('/api/schedules');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      renderSchedules(data.schedules || []);
+      upsertToast('schedule', 'success', 'SCHEDULE FETCH OK', '일정 조회 성공');
+    } catch (err) {
+      console.error('일정 조회 실패:', err);
+      upsertToast('schedule', 'error', 'SCHEDULE FETCH FAILED', '일정 조회 실패: ' + err.message);
+    }
+  }
+
+  async function refreshUsage() {
+    try {
+      const res = await fetch('/api/usage');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      renderUsageChart(data);
+      upsertToast('usage', 'success', 'USAGE FETCH OK', 'API 사용량 조회 성공');
+    } catch (err) {
+      console.error('API 사용량 조회 실패:', err);
+      upsertToast('usage', 'error', 'USAGE FETCH FAILED', 'API 사용량 조회 실패: ' + err.message);
+    }
+  }
+
+  function renderUsageChart(data) {
+    usageReadout.textContent = data.today + ' / ' + data.dailyLimit;
+    const days = data.last7Days || [];
+    usageBarChart.innerHTML = '';
+    usageBarLabels.innerHTML = '';
+    if (!days.length) return;
+
+    const maxCount = Math.max(1, ...days.map(d => d.count));
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    days.forEach(d => {
+      const pct = Math.max(4, Math.round((d.count / maxCount) * 100));
+      const bar = document.createElement('div');
+      bar.className = 'bar' + (d.date === todayStr ? ' today' : '');
+      bar.style.height = pct + '%';
+      usageBarChart.appendChild(bar);
+
+      const label = document.createElement('span');
+      label.textContent = d.label;
+      usageBarLabels.appendChild(label);
+    });
+  }
+
+  // ── 우측 패널: TODAY AT A GLANCE / UPCOMING REMINDERS / WEEKLY DENSITY ──
+  // (React의 utils/dashboardTime.js와 같은 계산 — 바꾸면 양쪽을 같이 바꿀 것)
+  const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+  const glanceDate = document.getElementById('glanceDate');
+  const glNext = document.getElementById('glNext');
+  const glToday = document.getElementById('glToday');
+  const glRem = document.getElementById('glRem');
+  const glConf = document.getElementById('glConf');
+  const remList = document.getElementById('remList');
+  const remCountTag = document.getElementById('remCountTag');
+  const weekChart = document.getElementById('weekChart');
+  const weekLabels = document.getElementById('weekLabels');
+  let lastSchedules = null;  // null = 아직 조회 전
+  let lastReminders = null;
+  const REMINDER_ROWS = 4;
+  const SCHEDULE_ROWS = 6;
+
+  function dayKey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+
+  function countdownText(ms) {
+    const m = Math.round(Math.max(0, ms) / 60000);
+    if (m < 1) return '곧';
+    if (m < 60) return m + '분';
+    const h = Math.floor(m / 60), mm = m % 60;
+    if (h < 24) return mm ? h + '시간 ' + mm + '분' : h + '시간';
+    const d = Math.floor(h / 24), hh = h % 24;
+    return hh ? d + '일 ' + hh + '시간' : d + '일';
+  }
+
+  function reminderWhen(d, now) {
+    const hm = pad(d.getHours()) + ':' + pad(d.getMinutes());
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    if (dayKey(d) === dayKey(now)) return '오늘 ' + hm;
+    if (dayKey(d) === dayKey(tomorrow)) return '내일 ' + hm;
+    return pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + hm;
+  }
+
+  // 일정 목록 → [{ start, conflict }] (시작 시각순). 겹침 판정은 renderSchedules와 같은 규칙(종료 없으면 1시간).
+  function scheduleSlots(schedules) {
+    const sorted = [...schedules].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+    const slots = sorted.map((s) => {
+      const start = new Date(s.startTime);
+      const end = s.endTime ? new Date(s.endTime) : new Date(start.getTime() + 3600000);
+      return { start, end, conflict: false };
+    });
+    for (let i = 0; i < slots.length; i++) {
+      for (let j = i + 1; j < slots.length; j++) {
+        if (slots[i].start < slots[j].end && slots[j].start < slots[i].end) { slots[i].conflict = true; slots[j].conflict = true; }
+      }
+    }
+    return slots;
+  }
+
+  function renderDashboard() {
+    const now = new Date();
+    glanceDate.textContent = pad(now.getMonth() + 1) + '/' + pad(now.getDate());
+    const slots = lastSchedules === null ? [] : scheduleSlots(lastSchedules);
+
+    // 요약 카드
+    const next = slots.find((x) => x.start >= now);
+    glNext.textContent = next ? countdownText(next.start - now) : '—';
+    glToday.textContent = lastSchedules === null ? '–' : String(slots.filter((x) => dayKey(x.start) === dayKey(now)).length);
+    glRem.textContent = lastReminders === null ? '–' : String(lastReminders.length);
+    const conflicts = slots.filter((x) => x.conflict).length;
+    glConf.textContent = lastSchedules === null ? '–' : String(conflicts);
+    glConf.classList.toggle('warn', conflicts > 0);
+
+    // 리마인더 목록 (content는 사용자가 쓴 글이라 textContent로만 넣는다)
+    remList.innerHTML = '';
+    if (lastReminders === null) {
+      remCountTag.textContent = '-';
+      const e = document.createElement('div'); e.className = 'mood-empty'; e.style.marginTop = '0'; e.textContent = '불러오는 중...'; remList.appendChild(e);
+    } else {
+      remCountTag.textContent = lastReminders.length + ' ITEMS';
+      if (!lastReminders.length) {
+        const e = document.createElement('div'); e.className = 'mood-empty'; e.style.marginTop = '0'; e.textContent = '"내일 9시에 알려줘"라고 말하면 여기에 쌓여요'; remList.appendChild(e);
+      }
+      lastReminders.slice(0, REMINDER_ROWS).forEach((r) => {
+        const row = document.createElement('div'); row.className = 'rem-row';
+        const when = document.createElement('span'); when.className = 'rem-when'; when.textContent = reminderWhen(new Date(r.remindAt), now);
+        const text = document.createElement('span'); text.className = 'rem-text'; text.textContent = r.content;
+        row.appendChild(when); row.appendChild(text); remList.appendChild(row);
+      });
+      if (lastReminders.length > REMINDER_ROWS) {
+        const more = document.createElement('div'); more.className = 'mood-empty'; more.style.marginTop = '6px';
+        more.textContent = '외 ' + (lastReminders.length - REMINDER_ROWS) + '건'; remList.appendChild(more);
+      }
+    }
+
+    // WEEKLY DENSITY: 오늘부터 7일의 실제 일정 개수
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      days.push({ key: dayKey(d), label: WEEKDAYS[d.getDay()], count: 0, conflict: false, today: i === 0 });
+    }
+    slots.forEach((x) => {
+      const b = days.find((d) => d.key === dayKey(x.start));
+      if (!b) return;
+      b.count += 1;
+      if (x.conflict) b.conflict = true;
+    });
+    const max = Math.max(1, ...days.map((d) => d.count));
+    weekChart.innerHTML = '';
+    weekLabels.innerHTML = '';
+    days.forEach((d) => {
+      const bar = document.createElement('div');
+      bar.className = 'bar' + (d.conflict ? ' conflict' : d.today ? ' today' : '');
+      bar.style.height = (d.count === 0 ? 4 : Math.max(14, Math.round((d.count / max) * 100))) + '%';
+      bar.title = d.key.slice(5).replace('-', '/') + ' · 일정 ' + d.count + '건' + (d.conflict ? ' (겹침)' : '');
+      weekChart.appendChild(bar);
+      const label = document.createElement('span');
+      label.textContent = d.label;
+      weekLabels.appendChild(label);
+    });
+  }
+
+  async function refreshReminders() {
+    try {
+      const res = await fetch('/api/reminders');
+      if (!res.ok) return;
+      lastReminders = (await res.json()).reminders || [];
+      renderDashboard();
+    } catch (err) {
+      console.error('리마인더 조회 실패:', err);
+    }
+  }
+  setInterval(renderDashboard, 30000); // 남은 시간 표시가 가만히 있어도 줄어들도록
+
+  // 서버는 각 일정을 개별로만 알고 있으므로(hasConflict는 add 시점에만 계산),
+  // 화면에 표시할 전체 목록 기준 겹침은 여기서 다시 한 번 계산한다.
+  function renderSchedules(schedules) {
+    lastSchedules = schedules;
+    renderDashboard();
+    schedCount.textContent = schedules.length + ' ITEMS';
+    schedList.innerHTML = '';
+
+    if (schedules.length === 0) {
+      const row = document.createElement('div');
+      row.className = 'sched-row';
+      row.innerHTML = '<span class="sched-title" style="color:#4A6472;">등록된 일정이 없습니다</span>';
+      schedList.appendChild(row);
+      alertCard.style.display = 'none';
+      return;
+    }
+
+    const sorted = [...schedules].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+    const now = new Date();
+    const conflicts = [];
+    for (let i = 0; i < sorted.length; i++) {
+      const aStart = new Date(sorted[i].startTime);
+      const aEnd = sorted[i].endTime ? new Date(sorted[i].endTime) : new Date(aStart.getTime() + 3600000);
+      for (let j = i + 1; j < sorted.length; j++) {
+        const bStart = new Date(sorted[j].startTime);
+        const bEnd = sorted[j].endTime ? new Date(sorted[j].endTime) : new Date(bStart.getTime() + 3600000);
+        if (aStart < bEnd && bStart < aEnd) conflicts.push([sorted[i], sorted[j]]);
+      }
+    }
+
+    let nextAssigned = false;
+    sorted.forEach((s, idx) => {
+      const start = new Date(s.startTime);
+      const isNext = !nextAssigned && start >= now;
+      if (isNext) nextAssigned = true;
+      const hasConflict = conflicts.some(([a, b]) => a === s || b === s);
+      if (idx >= SCHEDULE_ROWS) return; // 패널에는 앞쪽 몇 개만(나머지는 '외 N건')
+
+      const row = document.createElement('div');
+      row.className = 'sched-row' + (isNext ? ' next' : '');
+      const time = document.createElement('span');
+      time.className = 'sched-time';
+      time.textContent = pad(start.getHours()) + ':' + pad(start.getMinutes());
+      const box = document.createElement('div');
+      const title = document.createElement('div');
+      title.className = 'sched-title';
+      title.textContent = s.title;
+      box.appendChild(title);
+      if (hasConflict) {
+        const note = document.createElement('div');
+        note.className = 'sched-note';
+        note.textContent = 'CONFLICT';
+        box.appendChild(note);
+      }
+      row.appendChild(time);
+      row.appendChild(box);
+      schedList.appendChild(row);
+    });
+    if (sorted.length > SCHEDULE_ROWS) {
+      const more = document.createElement('div');
+      more.className = 'mood-empty';
+      more.style.marginTop = '6px';
+      more.textContent = '외 ' + (sorted.length - SCHEDULE_ROWS) + '건';
+      schedList.appendChild(more);
+    }
+
+    if (conflicts.length > 0) {
+      const [a, b] = conflicts[0];
+      alertBody.textContent = a.title + '과(와) ' + b.title + ' 일정이 겹칩니다. 조정이 필요할까요?';
+      alertCard.style.display = '';
+    } else {
+      alertCard.style.display = 'none';
+    }
+  }
+
+  // ── 교차 검증: 서버가 보관 중인 직전 질문/답변(+검색 근거)을 네이버 검색 근거와 대조해 Gemini가 다시 검토한다 ──
+  // 자동으로 돌리지 않고 사용자가 CROSS-CHECK 버튼을 누르거나 "교차 검증해줘"라고 말할 때만 실행한다
+  // (검색·모델 호출이 추가로 생기고 지연이 있기 때문). 검증 대상은 서버가 정하므로 본문은 보내지 않는다.
+  const CROSS_CHECK_PHRASE = /교차\s*검증|크로스\s*체크|cross[\s-]?check/i;
+
+  // 결과 중 판정·요약 두 줄만 음성으로 읽는다(전체는 길어서 화면에만 표시).
+  function crossCheckSpeech(detail) {
+    const lines = String(detail).split('\n').filter((l) => /^\s*(판정|요약)\s*[:：]/.test(l));
+    if (!lines.length) return '';
+    return '교차 검증 결과입니다. ' + lines.map((l) => l.replace(/\s*[:：]\s*/, ' ').trim()).join('. ');
+  }
+
+  async function crossCheck() {
+    if (consoleInput.disabled) return; // 다른 요청이 진행 중
+    pauseListeningForResponse(); // 결과를 읽어주는 동안 마이크가 자기 목소리를 다시 알아듣지 않도록
+    consoleInput.disabled = true;
+    consoleSend.disabled = true;
+    consoleCheck.disabled = true;
+    consoleCheckSource.disabled = true;
+    consoleTag.textContent = 'CROSS-CHECK...';
+    try {
+      const res = await fetch('/api/cross-check?source=' + encodeURIComponent(consoleCheckSource.value), {
+        method: 'POST',
+        headers: { 'X-XSRF-TOKEN': getCsrfToken() }
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(body && typeof body.error === 'string' ? body.error : '교차 검증에 실패했습니다.');
+      appendLog('check', '[교차 검증 · ' + body.model + '] ' + body.detail);
+      const spoken = crossCheckSpeech(body.detail);
+      if (spoken) await enqueueSpeak(spoken);
+    } catch (err) {
+      appendLog('check', err instanceof TypeError ? '서버에 연결하지 못했습니다.' : err.message);
+    } finally {
+      consoleInput.disabled = false;
+      consoleSend.disabled = false;
+      consoleCheck.disabled = false;
+      consoleCheckSource.disabled = false;
+      consoleTag.textContent = 'STANDBY';
+      consoleInput.focus();
+      resumeListeningIfContinuous();
+    }
+  }
+
+  async function sendMessage() {
+    const message = consoleInput.value.trim();
+    const image = pendingImage; // 첨부 이미지는 직접 입력해서 보낼 때만 함께 보낸다
+    if (!message && !image) return;
+    // "카드 닫아줘", "띄운 거 치워줘" 처럼 결과 카드를 없애 달라는 말
+    if (!image && window.LumiCards && LumiCards.isClearRequest(message)) {
+      consoleInput.value = '';
+      appendLog('user', message);
+      LumiCards.clear();
+      const cleared = '결과 카드를 치웠어요.';
+      appendLog('lumi', cleared);
+      await enqueueSpeak(cleared);
+      return;
+    }
+    if (!image && CROSS_CHECK_PHRASE.test(message) && message.length <= 30) {
+      consoleInput.value = '';
+      appendLog('user', message);
+      await crossCheck();
+      return;
+    }
+    pauseListeningForResponse(); // 응답을 기다리는 동안 마이크가 자기 말을 다시 알아듣지 않도록
+    const userRow = appendLog('user', message || '(이미지)', image ? image.previewUrl : null);
+    consoleInput.value = '';
+    if (image) { pendingImage = null; showPendingImage(); }
+    consoleInput.disabled = true;
+    consoleSend.disabled = true;
+    consoleTag.textContent = 'THINKING...';
+
+    // Gemini 응답이 늦어질수록(특히 일정/리마인더/웹 검색처럼 함수 호출이 섞이면) 아무
+    // 소리도 없이 멈춰 있는 시간이 길어진다 — 1.2초 안에 응답이 오면(대부분의 짧은 대화)
+    // 끼어들지 않도록 타이머를 취소하고, 그보다 오래 걸리면 짧은 채움 대사를 먼저
+    // 들려준다. 6초가 더 지나도 안 끝나면("아직 좀 걸리네요" 류) 한 번 더 안내한다.
+    const fillerLang = getEffectiveTtsLang();
+    const shortTimer = setTimeout(() => {
+      enqueueSpeak(pickFillerPhrase(FILLER_PHRASES_SHORT, fillerLang));
+    }, 1200);
+    const longTimer = setTimeout(() => {
+      enqueueSpeak(pickFillerPhrase(FILLER_PHRASES_LONG, fillerLang));
+    }, 7200);
+
+    try {
+      const data = await callChat(message, image);
+      clearTimeout(shortTimer);
+      clearTimeout(longTimer);
+      attachEmotionBadge(userRow, data.emotion);
+      const lumiRow = appendLog('lumi', data.reply);
+      attachToneLabel(lumiRow, data.emotion);
+      if (data.translatable) requestTranslation(lumiRow, data.reply);
+      appendLinks(data.links);
+      // 서버가 조회·검색 결과를 카드로 내려주면(cards 배열) 코어 주변에 띄운다.
+      if (Array.isArray(data.cards)) {
+        data.cards.forEach((card) => window.dispatchEvent(new CustomEvent('lumi:card', { detail: card })));
+      }
+      await enqueueSpeak(data.reply); // 채움 대사 뒤로 줄을 서서, 끝까지 재생되길 기다린 뒤에만 상시 듣기를 재개한다
+    } catch (err) {
+      clearTimeout(shortTimer);
+      clearTimeout(longTimer);
+      appendLog('lumi', err.userMessage || '통신 중 문제가 발생했습니다. 서버 실행 상태를 확인해주세요.');
+      console.error(err);
+    } finally {
+      consoleInput.disabled = false;
+      consoleSend.disabled = false;
+      consoleTag.textContent = 'STANDBY';
+      consoleInput.focus();
+      refreshSchedules();
+      refreshUsage();
+      refreshMood();
+      refreshNotes();
+      refreshSecurity();
+      refreshReminders();
+      resumeListeningIfContinuous();
+    }
+  }
+
+  consoleSend.addEventListener('click', sendMessage);
+  consoleCheck.addEventListener('click', crossCheck);
+  consoleInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  // 환영 인사는 페이지에 들어오자마자 바로 나와야 한다 — 클릭/키 입력 등 아무 상호작용도
+  // 기다리지 않고 즉시 말한다. 브라우저 자동재생 정책상 상호작용 전에는 소리가 막힐 수도
+  // 있지만(그 경우 이 한 번만 조용히 실패하고, 텍스트는 appendLog로 이미 보여준 상태라
+  // 대화 자체엔 지장이 없다), 허용되는 브라우저/상황에서는 아무것도 안 해도 바로 들린다.
+  // firstInteractionHandled는 "사용자가 페이지에 처음 손댄 순간"을 한 번만 잡아서, 그
+  // 순간 오디오 재생 권한 자체를 풀어두는 데만 쓴다 — 그 뒤로 이어지는 실제 대화 응답
+  // 음성(두 번째 메시지부터)이 안전하게 재생되게 하기 위함이다.
+  let firstInteractionHandled = false;
+
+  // "상호작용이 한 번 있었다"는 사실만으로는 부족하다 — 그 상호작용 핸들러 "안에서 곧바로"
+  // 재생을 시작한 게 아니라, fetch 같은 비동기 작업을 한 번 거친 뒤에야 play()/speak()를
+  // 호출하면 일부 브라우저(특히 speechSynthesis)는 그 사이에 활성화가 끊겼다고 보고 다시
+  // NotAllowedError로 막아버린다. 그래서 사용자가 페이지에 처음 손댄 "그 순간" 핸들러
+  // 안에서, 소리 없는 더미 재생을 동기적으로 한 번 실행해 오디오 엘리먼트와 음성합성 엔진
+  // 둘 다를 미리 "풀어"둔다. 이렇게 한 번 진짜로 재생이 성공하고 나면, 그 뒤로 fetch를
+  // 거쳐 늦게 호출하는 실제 인사말 재생도 더 이상 막히지 않는다.
+  function unlockAudioPlayback() {
+    try {
+      const prevMuted = ttsPlayer.muted;
+      ttsPlayer.muted = true;
+      const playPromise = ttsPlayer.play();
+      if (playPromise && typeof playPromise.catch === 'function') playPromise.catch(() => {});
+      ttsPlayer.pause();
+      ttsPlayer.currentTime = 0;
+      ttsPlayer.muted = prevMuted;
+    } catch {
+      // 무시 — 실패해도 음성합성 쪽 풀기는 별개로 계속 진행한다
+    }
+    try {
+      if (window.speechSynthesis) {
+        const unlockUtterance = new SpeechSynthesisUtterance(' ');
+        unlockUtterance.volume = 0;
+        window.speechSynthesis.speak(unlockUtterance);
+      }
+    } catch {
+      // 무시
+    }
+  }
+
+  function replayBlockedSpeech() {
+    const pending = blockedSpeech;
+    blockedSpeech = null;
+    if (!pending) return;
+    const run = () => (pending.url ? playTtsUrl(pending.url).catch(() => resetSpeakingVisual()) : speakBrowser(pending.text));
+    speechQueue = speechQueue.then(run, run);
+  }
+
+  function armFirstInteraction() {
+    if (firstInteractionHandled) return;
+    const handler = () => {
+      if (firstInteractionHandled) return;
+      firstInteractionHandled = true;
+      unlockAudioPlayback();
+      replayBlockedSpeech();
+      document.removeEventListener('pointerdown', handler);
+      document.removeEventListener('keydown', handler);
+      if (alwaysListenToggle.checked && !recognizing) {
+        startListening({ continuous: true });
+      }
+    };
+    document.addEventListener('pointerdown', handler, { once: true });
+    document.addEventListener('keydown', handler, { once: true });
+  }
+  armFirstInteraction();
+
+  // Lumi가 사용자 입력 없이 먼저 말을 걸어야 할 내용(리마인더/일정 임박 등)이 있는지
+  // 주기적으로 확인한다 — 메시지 입력창에 포커스가 있는지와 전혀 무관하게 항상 동작한다.
+  async function announceProactive(text, translation) {
+    pauseListeningForResponse();
+    const row = appendLog('lumi', text);
+    // 외국어 문구에 서버가 한국어 번역을 같이 주면 화면에만 덧붙인다(음성으로는 읽지 않는다).
+    if (typeof translation === 'string' && translation) {
+      const ko = document.createElement('div');
+      ko.className = 'log-row log-ko';
+      const tag = document.createElement('span');
+      tag.className = 'log-tag';
+      tag.textContent = 'KO';
+      const body = document.createElement('span');
+      body.className = 'log-text';
+      body.textContent = translation;
+      ko.appendChild(tag);
+      ko.appendChild(body);
+      row.after(ko);
+    }
+    await enqueueSpeak(text);
+    resumeListeningIfContinuous();
+  }
+
+  async function pollNotifications() {
+    try {
+      const res = await fetch('/api/notifications/pending');
+      if (res.status === 401) {
+        // 서버가 세션을 폐기함(유휴 만료·다른 기기에서 사용 감지) → 로그인 화면으로
+        window.location.href = '/login?expired';
+        return;
+      }
+      if (!res.ok) return;
+      const data = await res.json();
+      const items = data.notifications || [];
+      for (const n of items) {
+        await announceProactive(n.message, n.translation);
+      }
+    } catch (err) {
+      console.error('알림 조회 실패:', err);
+    }
+  }
+  setInterval(pollNotifications, 30000);
+
+  // 자리 비움 자동 로그아웃(정보보안개론 3장 세션 하이재킹 대응): 15분 동안 사용자 조작이나
+  // 사용자가 일으킨 서버 요청(대화 등)이 없으면 로그아웃한다. 30초 알림 확인은 '사용'으로 치지 않는다.
+  (function setupIdleLogout() {
+    const IDLE_MS = 15 * 60 * 1000;
+    const WARN_BEFORE_MS = 60 * 1000;
+    let last = Date.now();
+    let warned = false;
+    const markActive = () => { last = Date.now(); warned = false; };
+    ['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach((e) =>
+      window.addEventListener(e, markActive, { passive: true }));
+
+    const originalFetch = window.fetch;
+    window.fetch = function (input, init) {
+      const url = typeof input === 'string' ? input : (input && input.url) || '';
+      if (!url.startsWith('/api/notifications/pending')) markActive();
+      return originalFetch.call(this, input, init);
+    };
+
+    const timer = setInterval(async () => {
+      const idle = Date.now() - last;
+      if (idle >= IDLE_MS) {
+        clearInterval(timer);
+        try {
+          await originalFetch('/logout', { method: 'POST', headers: { 'X-XSRF-TOKEN': getCsrfToken() } });
+        } catch (e) { /* 네트워크 오류여도 화면은 로그인으로 보낸다 */ }
+        window.location.href = '/login?idle';
+      } else if (idle >= IDLE_MS - WARN_BEFORE_MS && !warned) {
+        warned = true;
+        showToast('error', '자동 로그아웃 예정', '1분 안에 아무 조작이 없으면 보안을 위해 로그아웃됩니다.', 8000);
+      }
+    }, 10000);
+  })();
+
+  // 페이지 로드 시: 인사 + 일정 브리핑을 한 번 자동 요청 (페르소나 시스템 프롬프트 §4 규칙)
+  (async function initGreeting() {
+    await settingsReady;
+    consoleTag.textContent = 'CONNECTING...';
+    try {
+      const data = await callChat('(대화 시작)');
+      const greetRow = appendLog('lumi', data.reply);
+      if (data.translatable) requestTranslation(greetRow, data.reply);
+      // 클릭/키 입력 등 아무 상호작용도 기다리지 않고 바로 말한다. 브라우저가 아직
+      // 자동재생을 막아둔 상태라면 이번 한 번은 소리 없이 조용히 실패하지만(텍스트는 위에서
+      // 이미 보여줬으므로 대화 자체엔 지장 없음), 그 뒤로 사용자가 아무 데나 한 번 클릭/
+      // 입력하면 armFirstInteraction()이 재생 권한을 풀어줘서 다음 응답부터는 정상 재생된다.
+      enqueueSpeak(data.reply);
+    } catch (err) {
+      appendLog('lumi', '서버에 연결하지 못했습니다. Spring Boot 애플리케이션이 실행 중인지 확인해주세요.');
+      console.error(err);
+    } finally {
+      consoleTag.textContent = 'STANDBY';
+      refreshSchedules();
+      refreshUsage();
+      refreshMood();
+      refreshNotes();
+      refreshSecurity();
+      refreshReminders();
+    }
+  })();
+</script>
+
+<script src="/js/result-stage.js"></script>
+</body>
+</html>

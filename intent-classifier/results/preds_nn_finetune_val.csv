@@ -1,0 +1,86 @@
+﻿id,text,label,pred,conf,lang,source,hard
+11,What's on my schedule today?,schedule_get,schedule_get,0.9904,en,ai,0
+12,Find a video tutorial for Spring Security,search_video,search_video,0.9903,en,ai,0
+41,When is my next appointment?,schedule_get,schedule_get,0.9893,en,ai,0
+48,한 시간 뒤에 회의 준비하라고 말해줘,reminder_add,reminder_add,0.9894,ko,ai,0
+50,이번 주 일정 한번 보여줘,schedule_get,schedule_get,0.9903,ko,ai,0
+56,졸업 프로젝트 이름이 Lumi라는 거 기억해,note_save,note_save,0.9904,ko,ai,0
+66,ㅋㅋㅋ 너 진짜 웃기다,chat_emotion,chat_emotion,0.9924,ko,ai,0
+67,어제 야구 경기 결과 뭐야,search_web,search_web,0.9709,ko,ai,0
+89,"I'm so happy today, everything went well",chat_emotion,chat_emotion,0.9910,en,ai,0
+91,내일 오후 3시에 팀 회의 잡아줘,schedule_add,schedule_add,0.9808,ko,ai,0
+103,나는 아침형 인간이 아니라는 거 메모해둬,note_save,note_save,0.9804,ko,ai,0
+104,나 매운 음식 잘 못 먹는다고 기억해줘,note_save,note_save,0.9898,ko,ai,0
+107,다음 리마인더가 언제야,reminder_get,reminder_get,0.9911,ko,ai,0
+108,내일 일정 겹치는 거 있나 확인해줘,schedule_get,schedule_get,0.9902,ko,ai,0
+109,정보처리기사 시험 일정 찾아줘,search_web,search_web,0.6419,ko,ai,0
+135,오늘 저녁 7시에 엄마한테 전화하라고 리마인드해줘,reminder_add,reminder_add,0.9868,ko,ai,0
+137,How many reminders are active right now?,reminder_get,reminder_get,0.9894,en,ai,0
+153,내일 점심 지나고 과제 제출하라고 깨워줘,reminder_add,reminder_add,0.9916,ko,ai,0
+156,스프링 부트 새로 나온 기능 검색해줘,search_web,search_web,0.9898,ko,ai,0
+164,Look up how to create a Python virtual environment,search_web,search_web,0.9794,en,ai,0
+169,Write down that my roommate's name is Taeo,note_save,note_save,0.9814,en,ai,0
+170,모레 시간 되나 일정 좀 확인해봐,schedule_get,schedule_get,0.9885,ko,ai,0
+175,유튜브로 홈트 루틴 영상 검색해줘,search_video,search_video,0.9906,ko,ai,0
+178,너한테 말하면 마음이 편해져,chat_emotion,chat_emotion,0.9919,ko,ai,0
+179,유튜브에서 코딩 테스트 풀이 영상 검색,search_video,search_video,0.9903,ko,ai,0
+186,룸메 이름 기억하고 있는 거 잊어버려,note_delete,note_delete,0.9869,ko,ai,0
+189,모레 아침에 도서관 책 반납하라고 알림 걸어줘,reminder_add,reminder_add,0.9881,ko,ai,0
+190,너는 이름이 왜 루미야?,chat_emotion,chat_emotion,0.9827,ko,ai,0
+191,내일 세 시에 회의 있다 등록해줘,schedule_add,schedule_add,0.8327,ko,ai,0
+194,명상 가이드 영상 틀어줘,search_video,search_video,0.9906,ko,ai,0
+201,스터디 팀원 이름이 민수 지아 하준이라고 적어둬,note_save,note_save,0.9874,ko,ai,0
+204,다크모드 선호 적어둔 거 삭제해줘,note_delete,note_delete,0.9863,ko,ai,0
+234,오늘 할 일 뭐 있지?,reminder_get,reminder_get,0.5357,ko,ai,1
+241,학점 목표 적은 거 지워도 돼,note_delete,note_delete,0.9886,ko,ai,0
+253,매운 음식 관련 메모 지워,note_delete,note_delete,0.9881,ko,ai,0
+276,What's the weather in Seoul today?,search_web,search_web,0.9896,en,ai,0
+282,Set up a call with the TA next Wednesday at 2,schedule_add,schedule_add,0.8277,en,ai,0
+284,목요일에 치과 몇 시로 해놨더라,schedule_get,schedule_get,0.9476,ko,ai,0
+293,토요일 낮 12시에 친구 결혼식 있어 캘린더에 올려줘,schedule_add,schedule_add,0.9906,ko,ai,0
+296,Add a project kickoff meeting on Tuesday at 10 am,schedule_add,schedule_add,0.9911,en,ai,0
+312,Never forget that I prefer window seats,note_save,note_save,0.9841,en,ai,0
+315,내가 말한 좋아하는 음식 얘기 이제 잊어줘,note_delete,note_delete,0.9297,ko,ai,0
+343,다다음 주 화요일 오후 5시 면접 일정 추가 부탁드려요,schedule_add,schedule_add,0.9914,ko,ai,0
+345,방금 정해진 건데 이번 주 목요일 7시 팀 회식 캘린더에 넣어줄래?,schedule_add,schedule_add,0.9825,ko,ai,0
+346,10월 21일 오전 10시에 중간고사 있어 일정으로 등록해줘,schedule_add,schedule_add,0.9904,ko,ai,0
+354,Put my study group on the calendar for Friday at 5 pm,schedule_add,schedule_add,0.9909,en,ai,0
+359,Please schedule a dentist visit for next Friday morning,schedule_add,schedule_add,0.9868,en,ai,0
+365,다음 주 월요일 일정 좀 알려줄래,schedule_get,schedule_get,0.9852,ko,ai,0
+381,15일에 뭐 있는지 알려줘,schedule_get,schedule_get,0.6999,ko,ai,0
+382,이번 주 안에 발표 일정 남았나?,schedule_get,schedule_get,0.9850,ko,ai,0
+395,오늘 밤 11시에 세탁기 돌린 거 널라고 알려줘,reminder_add,reminder_add,0.9916,ko,ai,0
+396,금요일 5시 전에 등록금 납부하라고 리마인드 해줘,reminder_add,reminder_add,0.9849,ko,ai,0
+400,내일 수업 가기 전에 과제 챙기라고 8시에 알림 설정해줘,reminder_add,reminder_add,0.9920,ko,ai,0
+404,이따 6시에 택배 확인하라고 한 번 불러줘,reminder_add,reminder_add,0.9915,ko,ai,0
+410,일요일 밤 9시에 월요일 서류 챙기라고 알려줘,reminder_add,reminder_add,0.9915,ko,ai,0
+421,Notify me 10 minutes before the lecture starts at 2 pm,reminder_add,reminder_add,0.9892,en,ai,0
+429,밀린 할 일 목록 좀 보여줘,reminder_get,reminder_get,0.9859,ko,ai,0
+436,약 먹으라는 알림 설정돼 있어?,reminder_get,reminder_get,0.9910,ko,ai,0
+443,Which alarms are still pending?,reminder_get,reminder_get,0.9816,en,ai,0
+445,Read back all my upcoming reminders,reminder_get,reminder_get,0.9903,en,ai,0
+446,How many reminders do I still have pending?,reminder_get,reminder_get,0.9909,en,ai,0
+450,Check if I already set a reminder for the meeting,reminder_get,reminder_get,0.9784,en,ai,0
+453,내가 제일 좋아하는 과목은 인공지능이라고 메모해줘,note_save,note_save,0.9902,ko,ai,0
+455,나는 발표 전에 긴장해서 물을 자주 마셔 이거 알아둬,note_save,note_save,0.9831,ko,ai,0
+469,앞으로 영어 단어는 한국어 뜻도 같이 알려달라고 기억해,note_save,note_save,0.9895,ko,ai,0
+480,Jot down that my professor's office hours are Wednesdays,note_save,reminder_add,0.3395,en,ai,0
+488,"그 얘기는 기억하지 마, 지워줘",note_delete,note_delete,0.9889,ko,ai,0
+490,아까 말한 목표 메모 취소해서 지워,note_delete,note_delete,0.9888,ko,ai,0
+491,채식한다고 적은 거 이제 아니야 삭제,note_delete,note_delete,0.9864,ko,ai,0
+493,조장 이름 저장한 거 잊어줘,note_delete,note_delete,0.9854,ko,ai,0
+500,방금 한 말은 노트에 남기지 말고 삭제해,note_delete,note_delete,0.9868,ko,ai,0
+528,어제 야구 경기 누가 이겼어?,search_web,search_web,0.8305,ko,ai,1
+533,Search for the best budget laptops in 2026,search_web,search_web,0.9841,en,ai,0
+534,Who is the current president of South Korea?,search_web,search_web,0.9893,en,ai,0
+541,공부할 때 듣기 좋은 로파이 플레이리스트 재생해줘,search_video,search_video,0.9694,ko,ai,0
+546,비 오는 날 듣기 좋은 노래 틀어줘,search_video,search_video,0.9874,ko,ai,0
+549,축구 하이라이트 영상 유튜브에서 틀어줘,search_video,search_video,0.9905,ko,ai,0
+553,파이썬 기초 강의 영상 추천해줘,search_video,search_video,0.9900,ko,ai,0
+557,신나는 노래 플레이리스트 하나 재생해줘,search_video,search_video,0.9753,ko,ai,0
+570,오늘 발표 망한 것 같아서 우울해,chat_emotion,chat_emotion,0.9924,ko,ai,0
+581,오늘 날씨 좋아서 기분 최고야,chat_emotion,chat_emotion,0.9440,ko,ai,1
+582,유튜브 알고리즘 때문에 시간 다 날렸어 ㅠㅠ,chat_emotion,chat_emotion,0.9447,ko,ai,1
+595,너는 감정이 있어?,chat_emotion,chat_emotion,0.9915,ko,ai,0
+599,I'm so stressed about finals,chat_emotion,chat_emotion,0.9915,en,ai,0
+602,I feel kind of lonely tonight,chat_emotion,chat_emotion,0.9923,en,ai,0

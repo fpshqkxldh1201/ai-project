@@ -1,0 +1,103 @@
+# Lumi 전체 배포: MySQL + 감정 서버 + Spring Boot(화면 포함) + Caddy(HTTPS)
+# 외부에 열리는 포트는 Caddy의 80/443 뿐이다. MySQL/감정 서버/Spring은 compose 내부 네트워크에서만 접근된다.
+# 실행: cd deploy && cp .env.example .env && (값 채우기) && docker compose up -d --build
+name: lumi
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--innodb-buffer-pool-size=256M"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?deploy/.env 에 MYSQL_ROOT_PASSWORD 를 넣으세요}
+      MYSQL_DATABASE: lumi_database
+      MYSQL_USER: lumi_app
+      MYSQL_PASSWORD: ${DB_PASSWORD:?deploy/.env 에 DB_PASSWORD 를 넣으세요}
+      TZ: Asia/Seoul
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks: [lumi-net]
+    healthcheck:
+      # 비밀번호를 명령줄 인자에 쓰지 않고 환경변수(MYSQL_PWD)로 넘긴다
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping -h 127.0.0.1 -uroot --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  emotion:
+    build:
+      context: ..
+      dockerfile: deploy/emotion.Dockerfile
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Seoul
+      # 사진 표정 모델은 기본 꺼짐(메모리 절약). 켜려면 EMOTION_IMAGE_MODEL=trpakov/vit-face-expression
+      EMOTION_IMAGE_MODEL: ${EMOTION_IMAGE_MODEL:-}
+    volumes:
+      - ../multilingual-e5-small/models:/app/multilingual-e5-small/models:ro
+      - ../intent-classifier/models:/app/intent-classifier/models:ro
+      - hf_cache:/hf-cache
+    networks: [lumi-net]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8002/health', timeout=4).status == 200 else 1)"]
+      interval: 15s
+      timeout: 6s
+      retries: 20
+      start_period: 300s   # 처음 한 번은 e5 인코더(약 470MB)를 내려받는다
+
+  spring:
+    build:
+      context: ..
+      dockerfile: deploy/spring.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      emotion:
+        condition: service_started   # 감정 서버가 늦어도 Spring은 먼저 뜬다
+    expose: ["8081"]
+    environment:
+      TZ: Asia/Seoul
+      DB_URL: "jdbc:mysql://mysql:3306/lumi_database?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true"
+      DB_USERNAME: lumi_app
+      DB_PASSWORD: ${DB_PASSWORD}
+      EMOTION_SERVER_BASE_URL: http://emotion:8002
+      JWT_SECRET: ${JWT_SECRET:?deploy/.env 에 JWT_SECRET 을 넣으세요}
+      # 배포 설정은 src/main/resources/application-prod.properties (쿠키 Secure, 프록시 신뢰 등 포함)
+      SPRING_PROFILES_ACTIVE: prod
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      NAVER_CLIENT_ID: ${NAVER_CLIENT_ID:-}
+      NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET:-}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      FISH_API_KEY: ${FISH_API_KEY:-}
+    networks: [lumi-net]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [spring]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?deploy/.env 에 SITE_ADDRESS(도메인)를 넣으세요}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [lumi-net]
+
+networks:
+  lumi-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  hf_cache:
+  caddy_data:
+  caddy_config:

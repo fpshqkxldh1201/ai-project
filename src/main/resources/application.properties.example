@@ -1,0 +1,51 @@
+# 로컬 개발용 설정 양식. 이 파일을 application.properties 로 복사해서 값을 채워 쓴다.
+# application.properties 는 .gitignore 에 들어 있어 git에 올라가지 않는다 (키가 공개되지 않도록).
+# 서버 배포는 application-prod.properties + 환경변수(deploy/.env)를 쓴다.
+
+spring.application.name=Lumi
+server.port=8081
+server.servlet.encoding.charset=UTF-8
+server.servlet.encoding.enabled=true
+server.servlet.encoding.force=true
+
+spring.datasource.url=jdbc:mysql://localhost:3306/lumi_database
+spring.datasource.username=lumi_app
+spring.datasource.password=CHANGE_ME
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# Google OAuth. 리디렉션 URI: http://localhost:8081/login/oauth2/code/google
+spring.security.oauth2.client.registration.google.client-id=CHANGE_ME
+spring.security.oauth2.client.registration.google.client-secret=CHANGE_ME
+spring.security.oauth2.client.registration.google.scope=openid,profile,email
+
+gemini.api.key=CHANGE_ME
+gemini.api.base-url=https://generativelanguage.googleapis.com/v1beta/models
+gemini.model=gemini-3.5-flash-lite
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.database-platform=org.hibernate.dialect.MySQLDialect
+
+spring.mustache.suffix=.mustache
+spring.mustache.prefix=classpath:/templates/
+spring.mustache.charset=UTF-8
+
+naver.api.client-id=CHANGE_ME
+naver.api.client-secret=CHANGE_ME
+emotion.server.base-url=http://localhost:8002
+
+fish.audio.api-key=CHANGE_ME
+fish.audio.model=s2.1-pro-free
+youtube.api.key=CHANGE_ME
+
+# 외부 AI 예비 호출 키는 환경변수로: OPENAI_API_KEY, XAI_API_KEY
+llm.fallback.enabled=true
+llm.fallback.order=openai,grok
+llm.openai.api-key=${OPENAI_API_KEY:}
+llm.grok.api-key=${XAI_API_KEY:}
+
+security.jwt.secret=CHANGE_ME_LONG_RANDOM
+security.jwt.cookie-secure=false
+server.servlet.session.cookie.same-site=lax
+router.enabled=true
+router.min-confidence=0.8

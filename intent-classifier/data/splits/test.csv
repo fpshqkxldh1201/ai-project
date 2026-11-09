@@ -1,0 +1,50 @@
+﻿id,text,label,lang,hard,source,version
+1,금요일 저녁에 다른 일정 겹치는 거 없나?,schedule_get,ko,0,ai,v1
+15,5분 뒤에 라면 불 끄라고 알려줘,reminder_add,ko,0,ai,v1
+16,Search the web for the OWASP Top 10,search_web,en,0,ai,v1
+19,Please add a family dinner this Sunday at 7 pm,schedule_add,en,0,ai,v1
+39,서울에서 가까운 당일치기 여행지 검색해줘,search_web,ko,0,ai,v1
+45,스터디 팀원 노트 삭제,note_delete,ko,0,ai,v1
+54,룸메 이름은 태오라고 기억해,note_save,ko,0,ai,v1
+61,에펠탑 높이가 몇 미터야,search_web,ko,1,ai,v1
+63,오늘 하루 일정이 어떻게 되어 있어,schedule_get,ko,0,ai,v1
+69,Clear the note about coffee,note_delete,en,0,ai,v1
+70,이번 주에 챙겨야 하는 알림 알려줘,reminder_get,ko,0,ai,v1
+73,Play a relaxing jazz playlist,search_video,en,0,ai,v1
+82,지난번에 기억해 달라고 한 거 다 잊어줘,note_delete,ko,0,ai,v1
+85,주말에 쓰레기 버리는 거 까먹지 않게 해줘,reminder_add,ko,0,ai,v1
+88,요즘 잠을 잘 못 자서 피곤해,chat_emotion,ko,0,ai,v1
+92,지금 대기 중인 리마인더가 있어?,reminder_get,ko,0,ai,v1
+94,일정이 너무 많아서 스트레스야,chat_emotion,ko,1,ai,v1
+96,월요일 9시 전공 수업 일정에 올려줘,schedule_add,ko,0,ai,v1
+98,Do I have any meetings tomorrow?,schedule_get,en,0,ai,v1
+99,Create an event for the study group on Thursday from 4 to 6 pm,schedule_add,en,0,ai,v1
+114,"Never mind, don't keep that in your memory",note_delete,en,1,ai,v1
+115,리마인더 확인해줘,reminder_get,ko,0,ai,v1
+118,Is my Friday evening free?,schedule_get,en,0,ai,v1
+126,발표 잘하는 법 영상 보고 싶어,search_video,ko,0,ai,v1
+140,이 노래 라이브 버전 들려줘,search_video,ko,1,ai,v1
+151,알림 예약한 거 한번 정리해줘,reminder_get,ko,0,ai,v1
+166,Forget what I said about spicy food,note_delete,en,0,ai,v1
+167,Who won the game last night?,search_web,en,0,ai,v1
+177,이따 밤 10시에 영양제 먹으라고 알려줘,reminder_add,ko,0,ai,v1
+181,My calendar is so packed I could cry,chat_emotion,en,1,ai,v1
+196,Remind me tomorrow morning to take my vitamins,reminder_add,en,0,ai,v1
+199,ASMR 영상 찾아서 링크 줘,search_video,ko,0,ai,v1
+212,내가 뭐 알려 달라고 했었지?,reminder_get,ko,0,ai,v1
+213,내가 좋아하는 가수는 아이유라고 저장해줘,note_save,ko,0,ai,v1
+216,Remember that my major is software engineering,note_save,en,0,ai,v1
+227,올해 노벨 문학상 누구야 검색해줘,search_web,ko,0,ai,v1
+229,너는 뭘 할 수 있어?,chat_emotion,ko,0,ai,v1
+243,Recommend some music for studying,search_video,en,1,ai,v1
+247,일정 하나 추가할게 모레 오전 10시 미용실,schedule_add,ko,0,ai,v1
+254,나 영어 면접이 약하다는 거 기억해줘,note_save,ko,0,ai,v1
+255,심심한데 아무 말이나 해줘,chat_emotion,ko,0,ai,v1
+262,나 다음 주에 시험 있다는 거 기억해줘,note_save,ko,1,ai,v1
+263,3시에 택배 찾으러 가라고 알려줘,reminder_add,ko,0,ai,v1
+264,Add a dentist appointment next Tuesday at 10 am to my calendar,schedule_add,en,0,ai,v1
+275,다음 주 월요일에 뭐 잡혀 있지?,schedule_get,ko,0,ai,v1
+289,내일 등교길에 우산 챙기라고 알려줘,reminder_add,ko,0,ai,v1
+295,내일 네 시에 조별 발표 있어 스케줄에 잡아놔,schedule_add,ko,0,ai,v1
+311,Don't forget that I'm vegetarian,note_save,en,0,ai,v1
+320,Forget the thing I said about my roommate,note_delete,en,0,ai,v1

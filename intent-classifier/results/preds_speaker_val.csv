@@ -1,0 +1,73 @@
+﻿id,text,label,pred,conf,lang,source,hard
+s006,나 학교 앞으로 데리러 와줄 수 있어,request,decline,0.7522,ko,ai,0
+s013,나 돈 좀 빌려줄 수 있어 월급날 갚을게,request,request,0.5496,ko,ai,0
+s017,회의록 공유 부탁드립니다,request,request,0.9051,ko,ai,0
+s019,내일 거래처 미팅 준비해 두세요,request,inform,0.9702,ko,ai,0
+s024,이 건 확인 좀 부탁드려요,request,request,0.7129,ko,ai,0
+s030,택배 좀 대신 받아주세요,request,request,0.9846,ko,ai,0
+s033,이번 시험은 언제 보는 거야,ask_info,ask_info,0.8109,ko,ai,0
+s034,휴대폰 요금은 얼마 나왔어,ask_info,ask_info,0.9369,ko,ai,0
+s038,그 사람 누구야,ask_info,ask_info,0.7249,ko,ai,0
+s040,그 영화 어땠어,ask_info,ask_info,0.9698,ko,ai,0
+s058,환불 절차가 어떻게 되나요,ask_info,ask_info,0.9602,ko,ai,0
+s060,지금 몇 번 버스를 타야 하나요,ask_info,ask_info,0.7465,ko,ai,0
+s062,집에는 잘 들어갔어,check_in,check_in,0.9440,ko,ai,0
+s067,오늘 하루 어땠어,check_in,ask_info,0.5484,ko,ai,0
+s069,어제 잘 잤어,check_in,check_in,0.9946,ko,ai,0
+s070,오늘 몸은 좀 괜찮아,check_in,check_in,0.6150,ko,ai,0
+s084,오늘 점심은 드셨어요,check_in,invite,0.4613,ko,ai,0
+s087,건강은 좀 어떠세요,check_in,check_in,0.9313,ko,ai,0
+s103,방학에 여행 같이 갈 사람,invite,invite,0.9965,ko,ai,0
+s106,오늘 점심 같이 먹을까요,invite,invite,0.9805,ko,ai,0
+s107,이번 주 금요일에 팀 회식 하려는데 어때요,invite,invite,0.7471,ko,ai,0
+s108,커피 한잔하면서 얘기 좀 나눠요,invite,invite,0.8268,ko,ai,0
+s109,다음 주에 같이 세미나 가볼래요,invite,invite,0.7616,ko,ai,0
+s114,이번 프로젝트 같이 해볼래요,invite,invite,0.5443,ko,ai,0
+s121,넌 맨날 바쁘다는 말만 하더라,complain,check_in,0.4720,ko,ai,0
+s122,전화 한 통 하기가 그렇게 힘드니,complain,complain,0.3132,ko,ai,0
+s127,맨날 나만 연락하는 것 같아,complain,decline,0.4479,ko,ai,0
+s129,나는 신경도 안 쓰이나 보네,complain,complain,0.6294,ko,ai,0
+s132,약속은 맨날 나만 잡네,complain,decline,0.7864,ko,ai,0
+s136,또 저한테만 일이 몰리는 것 같아요,complain,complain,0.6895,ko,ai,0
+s161,힘내라 넌 잘할 수 있어,care,care,0.9742,ko,ai,0
+s169,아프면 병가 써도 괜찮아요,care,care,0.7914,ko,ai,0
+s175,언제든 도움 필요하면 말씀하세요,care,care,0.8701,ko,ai,0
+s176,건강 잘 챙기세요,care,care,0.8819,ko,ai,0
+s177,조심해서 들어가세요,care,care,0.3457,ko,ai,0
+s180,너무 걱정 마세요 잘될 거예요,care,care,0.9882,ko,ai,0
+s182,네 덕분에 엄마가 얼마나 든든한지 몰라,praise,praise,0.5923,ko,ai,0
+s189,오늘 옷 진짜 잘 어울린다,praise,check_in,0.4383,ko,ai,0
+s190,역시 우리 자기가 최고야,praise,praise,0.9428,ko,ai,0
+s196,이번 프로젝트 정말 잘했어요,praise,praise,0.9875,ko,ai,0
+s207,덕분에 잘 해결됐어요 고맙습니다,praise,praise,0.8435,ko,ai,0
+s208,설명을 쏙쏙 들어오게 잘 해주셨어요,praise,praise,0.9970,ko,ai,0
+s211,너 이번에도 또 늦게 일어났니,criticize,urge,0.7920,ko,ai,0
+s216,너는 왜 항상 이런 식이야,criticize,criticize,0.5441,ko,ai,0
+s217,그렇게 말하면 내가 뭐가 되니,criticize,criticize,0.7757,ko,ai,0
+s219,그건 좀 아닌 것 같은데,criticize,decline,0.5847,ko,ai,0
+s228,왜 또 같은 실수를 반복하죠,criticize,criticize,0.5617,ko,ai,0
+s240,다음부터는 이러지 마세요,criticize,criticize,0.8411,ko,ai,0
+s244,그때 화낸 거 엄마가 미안해,apologize,apologize,0.9877,ko,ai,0
+s249,내가 잘못했어 한 번만 용서해줘,apologize,apologize,0.9522,ko,ai,0
+s250,그렇게 말해서 정말 미안해,apologize,apologize,0.9830,ko,ai,0
+s253,내가 생각이 짧았다 미안,apologize,apologize,0.9873,ko,ai,0
+s265,의도한 건 아니었는데 불편하셨다면 죄송해요,apologize,apologize,0.9013,ko,ai,0
+s268,늦어서 정말 죄송합니다,apologize,apologize,0.6970,ko,ai,0
+s271,이번 주는 바빠서 내려가기 어렵겠어요,decline,inform,0.2816,ko,ai,0
+s275,오늘은 좀 피곤해서 안 되겠다,decline,decline,0.6000,ko,ai,0
+s277,미안 그건 내가 지금 얘기하고 싶지 않아,decline,decline,0.6146,ko,ai,0
+s286,이번 일정은 맞추기 어려울 것 같습니다,decline,inform,0.7511,ko,ai,0
+s288,이번 요청은 받아들이기 곤란합니다,decline,decline,0.9818,ko,ai,0
+s298,그 날은 일정이 있어서 참석이 어렵습니다,decline,decline,0.8473,ko,ai,0
+s301,아직도 안 일어났니 빨리 일어나라,urge,urge,0.7437,ko,ai,0
+s303,취업 준비는 언제 끝나는 거야,urge,ask_info,0.6581,ko,ai,0
+s306,답장 왜 이렇게 늦어 빨리 해줘,urge,urge,0.9853,ko,ai,0
+s310,빨리 결정해줘 계속 기다리고 있잖아,urge,urge,0.9981,ko,ai,0
+s314,언제 나올 거야 지금 몇 시인데,urge,ask_info,0.9803,ko,ai,0
+s322,회신이 아직 없어서요 확인 부탁드려요,urge,urge,0.9098,ko,ai,0
+s336,나 지금 출발해,inform,decline,0.7078,ko,ai,0
+s337,오늘 야근이라 늦을 것 같아,inform,check_in,0.4412,ko,ai,0
+s342,내일 모임 장소 바뀌었어,inform,inform,0.5938,ko,ai,0
+s343,나 새 폰 샀어,inform,decline,0.3276,ko,ai,0
+s345,나 다음 주에 이사해,inform,inform,0.4101,ko,ai,0
+s355,이번 주 마감은 목요일이에요,inform,inform,0.8026,ko,ai,0

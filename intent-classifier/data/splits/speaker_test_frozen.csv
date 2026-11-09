@@ -1,0 +1,73 @@
+﻿id,text,label,relation,lang,hard,source,version
+s007,이번 주말엔 나랑 시간 좀 보내줘,request,연인,ko,0,ai,v1
+s011,야 노트북 좀 빌려줘 내일 돌려줄게,request,친구,ko,0,ai,v1
+s015,내 대신 출석 좀 불러줘,request,친구,ko,0,ai,v1
+s020,이 부분 수정해서 다시 가져와,request,상사,ko,0,ai,v1
+s023,공유 폴더에 파일 좀 올려주세요,request,동료,ko,0,ai,v1
+s027,자리 좀 비켜주실 수 있나요,request,기타,ko,0,ai,v1
+s042,시험 범위가 어디까지야,ask_info,친구,ko,0,ai,v1
+s045,그 가게 어디에 있었더라,ask_info,친구,ko,0,ai,v1
+s046,보고서는 어느 폴더에 있나요,ask_info,상사,ko,0,ai,v1
+s047,이 건 담당자가 누구죠,ask_info,상사,ko,0,ai,v1
+s051,이 함수는 어디서 호출하는 거예요,ask_info,동료,ko,0,ai,v1
+s054,이 오류 원인이 뭔지 아세요,ask_info,동료,ko,0,ai,v1
+s061,밥은 먹었니,check_in,부모님,ko,0,ai,v1
+s074,오랜만이다 별일 없지,check_in,친구,ko,0,ai,v1
+s075,그 일은 좀 해결됐어,check_in,친구,ko,0,ai,v1
+s076,요즘 많이 바쁘죠 컨디션은 어때요,check_in,상사,ko,0,ai,v1
+s082,휴가는 잘 다녀오셨어요,check_in,동료,ko,0,ai,v1
+s085,몸은 좀 괜찮아지셨어요,check_in,동료,ko,0,ai,v1
+s091,이번 주말에 다 같이 외식하자,invite,부모님,ko,0,ai,v1
+s093,다음 달에 가족 여행 가는 게 어떻겠니,invite,부모님,ko,0,ai,v1
+s102,이번 주말에 같이 게임하자,invite,친구,ko,0,ai,v1
+s104,내일 점심 같이 먹을래,invite,친구,ko,0,ai,v1
+s117,저희 가게에 한번 들러보세요,invite,기타,ko,0,ai,v1
+s119,주말에 행사 있는데 같이 가실래요,invite,기타,ko,0,ai,v1
+s126,요즘 나한테 너무 무심한 거 아니야,complain,연인,ko,0,ai,v1
+s130,바쁘면 어쩔 수 없지 뭐,complain,연인,ko,0,ai,v1
+s140,저는 왜 항상 늦게 알게 되는지 모르겠네요,complain,상사,ko,0,ai,v1
+s143,회의 때마다 제 의견은 무시되는 것 같아요,complain,동료,ko,0,ai,v1
+s146,아까부터 계속 기다리고 있는데 너무하시네요,complain,기타,ko,0,ai,v1
+s147,설명이랑 너무 다른데요,complain,기타,ko,0,ai,v1
+s166,무리하지 말고 쉬엄쉬엄 하세요,care,상사,ko,0,ai,v1
+s167,힘든 일 있으면 언제든 말해요,care,상사,ko,0,ai,v1
+s168,오늘은 일찍 들어가서 푹 쉬세요,care,상사,ko,0,ai,v1
+s170,너무 혼자 끌어안지 마세요,care,상사,ko,0,ai,v1
+s171,너무 무리하지 마세요 같이 하면 되죠,care,동료,ko,0,ai,v1
+s174,표정이 안 좋아 보여서 걱정돼요,care,동료,ko,0,ai,v1
+s185,네가 있어서 우리 집이 환해,praise,부모님,ko,0,ai,v1
+s187,너 덕분에 오늘 하루가 너무 행복했어,praise,연인,ko,0,ai,v1
+s195,오늘 네 덕에 분위기 완전 살았다,praise,친구,ko,0,ai,v1
+s201,덕분에 큰 도움이 됐어요 감사해요,praise,동료,ko,0,ai,v1
+s203,어제 대처 진짜 멋졌어요,praise,동료,ko,0,ai,v1
+s209,솜씨가 정말 좋으시네요,praise,기타,ko,0,ai,v1
+s213,도대체 정신을 어디에 두고 다니는 거야,criticize,부모님,ko,0,ai,v1
+s218,또 약속 잊어버렸어 정말 실망이다,criticize,연인,ko,0,ai,v1
+s221,야 그건 네가 잘못한 거지,criticize,친구,ko,0,ai,v1
+s230,준비를 이렇게 안 해오면 곤란합니다,criticize,상사,ko,0,ai,v1
+s232,왜 확인도 안 하고 올리셨어요,criticize,동료,ko,0,ai,v1
+s238,이건 명백히 잘못된 겁니다,criticize,기타,ko,0,ai,v1
+s241,어제는 엄마가 말이 심했다 미안하다,apologize,부모님,ko,0,ai,v1
+s246,어제는 내가 미안해 많이 서운했지,apologize,연인,ko,0,ai,v1
+s254,그때 일은 내가 사과할게,apologize,친구,ko,0,ai,v1
+s259,일정 변경해서 미안해요,apologize,상사,ko,0,ai,v1
+s263,말을 너무 세게 했네요 죄송해요,apologize,동료,ko,0,ai,v1
+s267,제가 착각했네요 죄송합니다,apologize,기타,ko,0,ai,v1
+s276,오늘은 좀 힘들 것 같아 다음에 보자,decline,연인,ko,0,ai,v1
+s279,그건 내가 하기 싫어,decline,연인,ko,0,ai,v1
+s284,다음에 하자 오늘은 안 되겠어,decline,친구,ko,0,ai,v1
+s287,그 건은 지금 진행하기 어렵겠네요,decline,상사,ko,0,ai,v1
+s293,이번엔 참석이 어려울 것 같아요,decline,동료,ko,0,ai,v1
+s295,다음에 해드릴게요 오늘은 어렵네요,decline,동료,ko,0,ai,v1
+s305,전화한다더니 아직도 소식이 없구나,urge,부모님,ko,0,ai,v1
+s317,언제까지 걸립니까 오늘 안에 끝내세요,urge,상사,ko,0,ai,v1
+s321,자료 아직 못 받았는데 언제쯤 주실 수 있어요,urge,동료,ko,0,ai,v1
+s323,오늘까지라고 말씀드렸는데 아직인가요,urge,동료,ko,0,ai,v1
+s324,빨리 좀 해주시면 안 될까요 일정이 급해서요,urge,동료,ko,0,ai,v1
+s326,언제쯤 연락 주실 수 있나요 계속 기다리고 있어요,urge,기타,ko,0,ai,v1
+s335,내일 이모네가 오기로 했어,inform,부모님,ko,0,ai,v1
+s339,내일 아침 일찍 약속이 있어,inform,연인,ko,0,ai,v1
+s341,나 이번 학기 휴학하기로 했어,inform,친구,ko,0,ai,v1
+s348,다음 주부터 새 팀원이 합류합니다,inform,상사,ko,0,ai,v1
+s352,서버 점검이 오늘 밤 열한 시에 있어요,inform,동료,ko,0,ai,v1
+s357,영업시간이 변경되었습니다,inform,기타,ko,0,ai,v1

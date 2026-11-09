@@ -1,0 +1,130 @@
+{
+  "model_version": "speaker-intent-e5small-lr-20261109-1613",
+  "relation_mode": "prefix",
+  "C": 20.0,
+  "temperature": 0.3,
+  "tau": 0.45,
+  "n": {
+    "train": 216,
+    "val": 72,
+    "test": 72
+  },
+  "val": {
+    "n": 72,
+    "accuracy": 0.7638888888888888,
+    "acc_ci95": [
+      0.667,
+      0.861
+    ],
+    "macro_f1": 0.7701243201243201,
+    "top2": 0.875
+  },
+  "val_answered": {
+    "tau": 0.45,
+    "coverage": 0.8888888888888888,
+    "accuracy_answered": 0.8125
+  },
+  "baseline_tfidf_val": {
+    "n": 72,
+    "accuracy": 0.6388888888888888,
+    "acc_ci95": [
+      0.528,
+      0.75
+    ],
+    "macro_f1": 0.63189969072322,
+    "top2": 0.7916666666666666
+  },
+  "per_class_val": {
+    "request": {
+      "n": 6,
+      "recall": 0.667
+    },
+    "ask_info": {
+      "n": 6,
+      "recall": 1.0
+    },
+    "check_in": {
+      "n": 6,
+      "recall": 0.667
+    },
+    "invite": {
+      "n": 6,
+      "recall": 1.0
+    },
+    "complain": {
+      "n": 6,
+      "recall": 0.5
+    },
+    "care": {
+      "n": 6,
+      "recall": 1.0
+    },
+    "praise": {
+      "n": 6,
+      "recall": 0.833
+    },
+    "criticize": {
+      "n": 6,
+      "recall": 0.667
+    },
+    "apologize": {
+      "n": 6,
+      "recall": 1.0
+    },
+    "decline": {
+      "n": 6,
+      "recall": 0.667
+    },
+    "urge": {
+      "n": 6,
+      "recall": 0.667
+    },
+    "inform": {
+      "n": 6,
+      "recall": 0.5
+    }
+  },
+  "top_confusions_val": [
+    {
+      "n": 2,
+      "true": "urge",
+      "pred": "ask_info"
+    },
+    {
+      "n": 2,
+      "true": "inform",
+      "pred": "decline"
+    },
+    {
+      "n": 2,
+      "true": "decline",
+      "pred": "inform"
+    },
+    {
+      "n": 2,
+      "true": "complain",
+      "pred": "decline"
+    },
+    {
+      "n": 1,
+      "true": "request",
+      "pred": "inform"
+    },
+    {
+      "n": 1,
+      "true": "request",
+      "pred": "decline"
+    },
+    {
+      "n": 1,
+      "true": "praise",
+      "pred": "check_in"
+    },
+    {
+      "n": 1,
+      "true": "inform",
+      "pred": "check_in"
+    }
+  ],
+  "test": null
+}

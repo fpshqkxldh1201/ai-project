@@ -1,0 +1,4 @@
+일부 한국어 문장은 MASSIVE(CC BY 4.0)에서 가져왔습니다.
+FitzGerald et al., 2022. MASSIVE: A 1M-Example Multilingual Natural Language Understanding Dataset with 51 Typologically-Diverse Languages. arXiv:2204.08582.
+원문은 SLURP(Bastianelli et al., 2020, EMNLP)이며, 사람이 한국어로 현지화하고 다른 작업자가 의도·문법을 검수했습니다. source=massive, version=v3 로 표시했습니다.
+라벨은 이 프로젝트의 9개 라벨로 직접 매핑한 것이라(import_massive.py의 MAP) 원 데이터의 라벨과 다를 수 있습니다.

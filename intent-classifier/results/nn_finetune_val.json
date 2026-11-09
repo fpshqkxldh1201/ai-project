@@ -1,0 +1,28 @@
+{
+  "mode": "finetune",
+  "encoder": "intfloat/multilingual-e5-small",
+  "prefix": "query: ",
+  "max_len": 48,
+  "labels": [
+    "schedule_add",
+    "schedule_get",
+    "reminder_add",
+    "reminder_get",
+    "note_save",
+    "note_delete",
+    "search_web",
+    "search_video",
+    "chat_emotion"
+  ],
+  "best_epoch": 20,
+  "val_accuracy": 0.9882352948188782,
+  "val_macro_f1": 0.9888610414926204,
+  "seeds": 3,
+  "val_acc_mean": 0.9882352948188782,
+  "val_acc_std": 0.0,
+  "name": "미세조정 (multilingual-e5-small), 3시드",
+  "acc_mean": 0.9882352948188782,
+  "acc_std": 0.0,
+  "f1_mean": 0.9888610414926204,
+  "f1_std": 0.0
+}

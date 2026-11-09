@@ -1,0 +1,81 @@
+﻿id,text,lang,expected_polarity,expected_moods,source
+C001,오늘 과제 드디어 다 끝냈어! 너무 뿌듯하다,ko,pos,happy|energetic,ai
+C002,교수님이 내 발표 칭찬해주셨어 진짜 기분 좋아,ko,pos,happy|energetic,ai
+C003,시험 점수 잘 나왔다 완전 행복해,ko,pos,happy|energetic,ai
+C004,친구가 생일 선물 챙겨줘서 너무 고마워,ko,pos,happy|calm,ai
+C005,배포 성공했다!! 드디어 됐어,ko,pos,happy|energetic,ai
+C006,오랜만에 가족이랑 밥 먹었는데 마음이 따뜻해졌어,ko,pos,happy|calm,ai
+C007,주말에 여행 간다 벌써부터 설레,ko,pos,happy|energetic,ai
+C008,공모전 1차 통과했대 믿기지가 않아,ko,pos,happy|energetic,ai
+C009,오늘 날씨 좋아서 기분이 상쾌해,ko,pos,happy|calm|energetic,ai
+C010,코딩하다가 버그 잡았다 속이 시원해,ko,pos,happy|energetic|calm,ai
+C011,고양이가 무릎에 올라와서 잠들었어 너무 귀여워,ko,pos,happy|calm,ai
+C012,새 노트북 도착했다 신난다,ko,pos,energetic|happy,ai
+C013,퇴근하고 따뜻한 차 마시면서 쉬는 중이야 편안하다,ko,pos,calm|happy,ai
+C014,오늘은 아무 일정 없어서 느긋하게 보내고 있어,ko,pos,calm|happy|neutral,ai
+C015,비 오는 소리 들으면서 책 읽는 중이야 마음이 차분해,ko,pos,calm,ai
+C016,산책하고 왔더니 머리가 맑아졌어,ko,pos,calm|happy,ai
+C017,오늘 너무 힘들었어,ko,neg,melancholy|sad,ai
+C018,팀플에서 나만 겉도는 것 같아서 서운해,ko,neg,sad|melancholy,ai
+C019,친구랑 싸워서 마음이 너무 안 좋아,ko,neg,sad|angry|melancholy,ai
+C020,시험 망쳤어... 어떡하지,ko,neg,sad|melancholy,ai
+C021,오늘따라 엄마가 보고싶다,ko,neg,sad|melancholy,ai
+C022,열심히 했는데 결과가 안 나와서 속상해,ko,neg,sad|melancholy,ai
+C023,혼자 있으니까 외롭다,ko,neg,sad|melancholy,ai
+C024,기대했던 일이 취소돼서 너무 실망이야,ko,neg,sad|angry|melancholy,ai
+C025,요즘 계속 밤새서 몸이 천근만근이야,ko,neg,melancholy|sad|neutral,ai
+C026,아무것도 하기 싫고 지쳤어,ko,neg,melancholy|sad,ai
+C027,번아웃 온 것 같아 더는 못 하겠어,ko,neg,melancholy|sad,ai
+C028,과제랑 프로젝트가 겹쳐서 숨이 막혀,ko,neg,melancholy|sad|angry,ai
+C029,내일 발표인데 너무 떨리고 불안해,ko,neg,sad|melancholy,ai
+C030,배포가 제대로 될지 걱정돼서 잠이 안 와,ko,neg,sad|melancholy,ai
+C031,면담에서 무슨 말 들을까 무서워,ko,neg,sad|melancholy|angry,ai
+C032,시험 결과가 나올 때가 다가오니까 초조해,ko,neg,sad|melancholy,ai
+C033,진짜 짜증나 서버가 또 터졌어,ko,neg,angry,ai
+C034,왜 내 말을 아무도 안 들어주는 거야 화가 나,ko,neg,angry,ai
+C035,아까 그 사람 무례해서 열받아,ko,neg,angry,ai
+C036,계속 오류가 나서 미치겠다 진짜,ko,neg,angry|melancholy,ai
+C037,약속 시간 또 어겼어 정말 어이없다,ko,neg,angry|neutral,ai
+C038,이런 식으로 대하는 게 너무 화나,ko,neg,angry,ai
+C039,내일 오후 3시에 팀 미팅 잡아줘,ko,neu,neutral|calm,ai
+C040,오늘 일정 알려줘,ko,neu,neutral|calm,ai
+C041,스프링 시큐리티 CSRF가 뭐야?,ko,neu,neutral|calm,ai
+C042,리마인더 6시에 설정해줘,ko,neu,neutral|calm,ai
+C043,유튜브에서 로파이 음악 찾아줘,ko,neu,neutral|calm,ai
+C044,다음 주 시험 일정 확인해줘,ko,neu,neutral|calm,ai
+C045,메모 하나 저장해줘 교수님 면담은 수요일,ko,neu,neutral|calm,ai
+C046,방금 노트 삭제해줘,ko,neu,neutral|calm,ai
+C047,서울 날씨 어때?,ko,neu,neutral|calm,ai
+C048,너는 뭘 할 수 있어?,ko,neu,neutral|calm|energetic,ai
+C049,안녕 루미,ko,neu,neutral|calm|happy,ai
+C050,지금 몇 시야?,ko,neu,neutral|calm,ai
+C051,오늘 점심 뭐 먹을지 추천해줘,ko,neu,neutral|calm|happy,ai
+C052,파이썬으로 리스트 정렬하는 방법 알려줘,ko,neu,neutral|calm,ai
+C053,ㅋㅋㅋㅋ 이거 진짜 웃기다,ko,pos,happy|energetic,ai
+C054,아 ㅠㅠ 나 왜이러지,ko,neg,sad|melancholy,ai
+C055,개빡치네 진짜,ko,neg,angry,ai
+C056,대박!! 합격했어 ㅠㅠㅠ 너무 기뻐,ko,pos,happy|energetic,ai
+C057,하... 또 야근이네,ko,neg,melancholy|sad|angry,ai
+C058,와 미쳤다 이거 실화냐 최고다,ko,pos,energetic|happy,ai
+C059,"I finally finished my assignment, I feel so proud!",en,pos,happy|energetic,ai
+C060,"I got an A on the exam, I'm so happy!",en,pos,happy|energetic,ai
+C061,"Thank you so much, that really helped me out.",en,pos,happy|calm,ai
+C062,I'm so excited for the trip this weekend!,en,pos,energetic|happy,ai
+C063,Feeling relaxed and peaceful tonight.,en,pos,calm|happy,ai
+C064,My professor praised my presentation today.,en,pos,happy|energetic,ai
+C065,I had a really rough day.,en,neg,melancholy|sad,ai
+C066,I feel so lonely lately.,en,neg,sad|melancholy,ai
+C067,I'm exhausted and I can't keep going like this.,en,neg,melancholy|sad,ai
+C068,I'm really worried about tomorrow's interview.,en,neg,sad|melancholy,ai
+C069,I failed the test and I feel terrible.,en,neg,sad|melancholy,ai
+C070,I miss my family so much.,en,neg,sad|melancholy,ai
+C071,"I'm so angry, the server crashed again!",en,neg,angry,ai
+C072,"This is so annoying, nothing works.",en,neg,angry|melancholy,ai
+C073,"He was so rude to me, I'm furious.",en,neg,angry,ai
+C074,Add a meeting tomorrow at 3 pm.,en,neu,neutral|calm,ai
+C075,What's on my schedule today?,en,neu,neutral|calm,ai
+C076,Search YouTube for lo-fi music.,en,neu,neutral|calm,ai
+C077,Set a reminder for 6 pm.,en,neu,neutral|calm,ai
+C078,What's the weather like in Seoul?,en,neu,neutral|calm,ai
+C079,Save a note: office hours on Wednesday.,en,neu,neutral|calm,ai
+C080,Who won the game last night?,en,neu,neutral|calm|energetic,ai

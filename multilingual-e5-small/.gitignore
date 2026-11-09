@@ -1,0 +1,10 @@
+models/*
+!models/emotion/
+models/emotion/*
+!models/emotion/head.pt
+!models/emotion/gate.json
+!models/emotion/meta.json
+results/
+data/kote/
+data/cache/
+__pycache__/

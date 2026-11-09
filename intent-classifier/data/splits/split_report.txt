@@ -1,0 +1,16 @@
+분할 결과 (seed=42, test = v1 동결)
+label          train  val  test
+schedule_add      82   14     6
+schedule_get      77   14     5
+reminder_add      80   14     6
+reminder_get      76   13     5
+note_save         54   10     6
+note_delete       54   10     6
+search_web        73   13     5
+search_video      74   13     5
+chat_emotion      82   15     5
+합계 train 652 / val 116 / test 49
+언어: train={'ko': 509, 'en': 143}, val={'ko': 84, 'en': 32}, test(v1 동결)={'ko': 32, 'en': 17}
+출처: train={'ai': 475, 'massive': 177}, val={'ai': 83, 'massive': 33}, test(v1 동결)={'ai': 49}
+어려운 문장(hard): train=35, val=7, test(v1 동결)=7
+동결 테스트와 너무 비슷해 제외한 새 문장: 0개

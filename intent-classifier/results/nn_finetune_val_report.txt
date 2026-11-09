@@ -1,0 +1,15 @@
+              precision    recall  f1-score   support
+
+schedule_add       1.00      1.00      1.00        10
+schedule_get       1.00      1.00      1.00         9
+reminder_add       0.91      1.00      0.95        10
+reminder_get       1.00      1.00      1.00         9
+   note_save       1.00      0.90      0.95        10
+ note_delete       1.00      1.00      1.00        10
+  search_web       1.00      1.00      1.00         8
+search_video       1.00      1.00      1.00         9
+chat_emotion       1.00      1.00      1.00        10
+
+    accuracy                           0.99        85
+   macro avg       0.99      0.99      0.99        85
+weighted avg       0.99      0.99      0.99        85

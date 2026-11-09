@@ -1,0 +1,28 @@
+{
+  "mode": "head",
+  "encoder": "intfloat/multilingual-e5-small",
+  "prefix": "query: ",
+  "max_len": 48,
+  "labels": [
+    "schedule_add",
+    "schedule_get",
+    "reminder_add",
+    "reminder_get",
+    "note_save",
+    "note_delete",
+    "search_web",
+    "search_video",
+    "chat_emotion"
+  ],
+  "best_epoch": 45,
+  "val_accuracy": 0.8879310488700867,
+  "val_macro_f1": 0.8925308555694976,
+  "seeds": 5,
+  "val_acc_mean": 0.882758629322052,
+  "val_acc_std": 0.01169367953650126,
+  "name": "고정 인코더+MLP (multilingual-e5-small), 5시드",
+  "acc_mean": 0.882758629322052,
+  "acc_std": 0.01169367953650126,
+  "f1_mean": 0.8873103993721123,
+  "f1_std": 0.012690656576983211
+}

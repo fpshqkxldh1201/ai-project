@@ -1,0 +1,2 @@
+2026-10-11 20:37:49 nn-finetune test acc=0.925±0.010 macroF1=0.924
+2026-10-11 20:44:12 baseline test acc=0.776 macroF1=0.767

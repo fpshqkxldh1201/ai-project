@@ -1,0 +1,22 @@
+# SITE_ADDRESS 에 도메인(예: lumi-abc.duckdns.org)을 넣으면 Caddy가 HTTPS 인증서를 자동으로 받고 갱신한다.
+# 화면 공유·마이크·카메라는 HTTPS(또는 localhost)에서만 동작하므로 IP 주소만으로는 쓸 수 없다.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	# 운영에서 열려 있으면 안 되는 개발용 경로는 막는다
+	@blocked path /actuator* /h2-console*
+	respond @blocked 404
+
+	header {
+		Strict-Transport-Security "max-age=86400"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	reverse_proxy spring:8081 {
+		transport http {
+			response_header_timeout 90s
+		}
+	}
+}

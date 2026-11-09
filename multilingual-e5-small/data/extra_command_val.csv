@@ -1,0 +1,76 @@
+text,lang,source
+What's on my schedule today?,en,schedule_get
+Find a video tutorial for Spring Security,en,search_video
+When is my next appointment?,en,schedule_get
+한 시간 뒤에 회의 준비하라고 말해줘,ko,reminder_add
+이번 주 일정 한번 보여줘,ko,schedule_get
+졸업 프로젝트 이름이 Lumi라는 거 기억해,ko,note_save
+어제 야구 경기 결과 뭐야,ko,search_web
+내일 오후 3시에 팀 회의 잡아줘,ko,schedule_add
+나는 아침형 인간이 아니라는 거 메모해둬,ko,note_save
+나 매운 음식 잘 못 먹는다고 기억해줘,ko,note_save
+다음 리마인더가 언제야,ko,reminder_get
+내일 일정 겹치는 거 있나 확인해줘,ko,schedule_get
+정보처리기사 시험 일정 찾아줘,ko,search_web
+오늘 저녁 7시에 엄마한테 전화하라고 리마인드해줘,ko,reminder_add
+How many reminders are active right now?,en,reminder_get
+내일 점심 지나고 과제 제출하라고 깨워줘,ko,reminder_add
+스프링 부트 새로 나온 기능 검색해줘,ko,search_web
+Look up how to create a Python virtual environment,en,search_web
+Write down that my roommate's name is Taeo,en,note_save
+모레 시간 되나 일정 좀 확인해봐,ko,schedule_get
+유튜브로 홈트 루틴 영상 검색해줘,ko,search_video
+유튜브에서 코딩 테스트 풀이 영상 검색,ko,search_video
+룸메 이름 기억하고 있는 거 잊어버려,ko,note_delete
+모레 아침에 도서관 책 반납하라고 알림 걸어줘,ko,reminder_add
+내일 세 시에 회의 있다 등록해줘,ko,schedule_add
+명상 가이드 영상 틀어줘,ko,search_video
+스터디 팀원 이름이 민수 지아 하준이라고 적어둬,ko,note_save
+다크모드 선호 적어둔 거 삭제해줘,ko,note_delete
+오늘 할 일 뭐 있지?,ko,reminder_get
+학점 목표 적은 거 지워도 돼,ko,note_delete
+매운 음식 관련 메모 지워,ko,note_delete
+What's the weather in Seoul today?,en,search_web
+Set up a call with the TA next Wednesday at 2,en,schedule_add
+목요일에 치과 몇 시로 해놨더라,ko,schedule_get
+토요일 낮 12시에 친구 결혼식 있어 캘린더에 올려줘,ko,schedule_add
+Add a project kickoff meeting on Tuesday at 10 am,en,schedule_add
+Never forget that I prefer window seats,en,note_save
+내가 말한 좋아하는 음식 얘기 이제 잊어줘,ko,note_delete
+다다음 주 화요일 오후 5시 면접 일정 추가 부탁드려요,ko,schedule_add
+방금 정해진 건데 이번 주 목요일 7시 팀 회식 캘린더에 넣어줄래?,ko,schedule_add
+10월 21일 오전 10시에 중간고사 있어 일정으로 등록해줘,ko,schedule_add
+Put my study group on the calendar for Friday at 5 pm,en,schedule_add
+Please schedule a dentist visit for next Friday morning,en,schedule_add
+다음 주 월요일 일정 좀 알려줄래,ko,schedule_get
+15일에 뭐 있는지 알려줘,ko,schedule_get
+이번 주 안에 발표 일정 남았나?,ko,schedule_get
+오늘 밤 11시에 세탁기 돌린 거 널라고 알려줘,ko,reminder_add
+금요일 5시 전에 등록금 납부하라고 리마인드 해줘,ko,reminder_add
+내일 수업 가기 전에 과제 챙기라고 8시에 알림 설정해줘,ko,reminder_add
+이따 6시에 택배 확인하라고 한 번 불러줘,ko,reminder_add
+일요일 밤 9시에 월요일 서류 챙기라고 알려줘,ko,reminder_add
+Notify me 10 minutes before the lecture starts at 2 pm,en,reminder_add
+밀린 할 일 목록 좀 보여줘,ko,reminder_get
+약 먹으라는 알림 설정돼 있어?,ko,reminder_get
+Which alarms are still pending?,en,reminder_get
+Read back all my upcoming reminders,en,reminder_get
+How many reminders do I still have pending?,en,reminder_get
+Check if I already set a reminder for the meeting,en,reminder_get
+내가 제일 좋아하는 과목은 인공지능이라고 메모해줘,ko,note_save
+나는 발표 전에 긴장해서 물을 자주 마셔 이거 알아둬,ko,note_save
+앞으로 영어 단어는 한국어 뜻도 같이 알려달라고 기억해,ko,note_save
+Jot down that my professor's office hours are Wednesdays,en,note_save
+"그 얘기는 기억하지 마, 지워줘",ko,note_delete
+아까 말한 목표 메모 취소해서 지워,ko,note_delete
+채식한다고 적은 거 이제 아니야 삭제,ko,note_delete
+조장 이름 저장한 거 잊어줘,ko,note_delete
+방금 한 말은 노트에 남기지 말고 삭제해,ko,note_delete
+어제 야구 경기 누가 이겼어?,ko,search_web
+Search for the best budget laptops in 2026,en,search_web
+Who is the current president of South Korea?,en,search_web
+공부할 때 듣기 좋은 로파이 플레이리스트 재생해줘,ko,search_video
+비 오는 날 듣기 좋은 노래 틀어줘,ko,search_video
+축구 하이라이트 영상 유튜브에서 틀어줘,ko,search_video
+파이썬 기초 강의 영상 추천해줘,ko,search_video
+신나는 노래 플레이리스트 하나 재생해줘,ko,search_video

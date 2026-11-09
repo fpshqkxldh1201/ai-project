@@ -1,0 +1,140 @@
+﻿id,text,label,lang,hard,source,version
+5001,내일 아침 열 시 부터 한 시간 막아놔,schedule_add,ko,0,massive,v3
+5002,내 달력에서 이것 추가해,schedule_add,ko,0,massive,v3
+5003,삼월 수요일마다 오후 열두시 점심 회의 설정해,schedule_add,ko,0,massive,v3
+5004,일주일 동안 사장님과 중요한 회의 관련해서 알려줘,schedule_add,ko,0,massive,v3
+5005,달력에 지역에 대한 리마인더 만들어줘,schedule_add,ko,0,massive,v3
+5006,이십 일일 일곱시 동창 모임 추가해,schedule_add,ko,0,massive,v3
+5007,오일을 갈라고 알려줘,schedule_add,ko,0,massive,v3
+5008,우체국 가는 거 알려줘,schedule_add,ko,0,massive,v3
+5009,일요일 오전 열한시에 예배라고 알려줘,schedule_add,ko,0,massive,v3
+5010,정오에 사장님과 점심 리마인더 세팅해,schedule_add,ko,0,massive,v3
+5011,빛나라뮤직 에서 오후 네시 바이올린 레슨 하러 출발해야 하니까 두 시간 후에 알려줘,schedule_add,ko,0,massive,v3
+5012,매주 월요일 리마인더 설정해야 돼,schedule_add,ko,0,massive,v3
+5013,다음 주 내 업무 달력 이벤트 보여줘,schedule_add,ko,0,massive,v3
+5014,스포츠 경기 알림 세팅해,schedule_add,ko,0,massive,v3
+5015,내 달력에서 일정 알려줘,schedule_add,ko,0,massive,v3
+5016,이 사람이랑 회의를 잡아줘,schedule_add,ko,0,massive,v3
+5017,두 시간 후 나 치과 예약 있는 거 리마인드 해 줄래,schedule_add,ko,0,massive,v3
+5018,다가오는 종민 과의 미팅 알려줘,schedule_add,ko,0,massive,v3
+5019,점심 미팅 한 시간 전에 알려줄 리마인더 설정,schedule_add,ko,0,massive,v3
+5020,캘린더 에 내일 저녁 추가,schedule_add,ko,0,massive,v3
+5021,무슨 리마인더 설정했어,schedule_get,ko,0,massive,v3
+5022,세시에서 다섯시 미팅 리마인더,schedule_get,ko,0,massive,v3
+5023,진호의 결혼식 장소가 어디야,schedule_get,ko,0,massive,v3
+5024,오늘 현충일이야,schedule_get,ko,0,massive,v3
+5025,오후 여섯시 이후 오늘의 달력 이벤트 알려줘,schedule_get,ko,0,massive,v3
+5026,내일 계획,schedule_get,ko,0,massive,v3
+5027,이번 주 내가 뭐 해야 하지,schedule_get,ko,0,massive,v3
+5028,무슨 리마인더 있어,schedule_get,ko,0,massive,v3
+5029,이 이슈에 관한 팩트를 체크해줄 수 있어,schedule_get,ko,0,massive,v3
+5030,삼월 삼십일일 진료 예약 몇 시야,schedule_get,ko,0,massive,v3
+5031,내가 너에게 뭔가 알려주라고 말했나,schedule_get,ko,0,massive,v3
+5032,소셜미디어 알림 어떤 거 있어,schedule_get,ko,0,massive,v3
+5033,십이월 사일에 무슨 일이 있어,schedule_get,ko,0,massive,v3
+5034,오늘 고객이랑 진행하는 회의 일정 알려줘,schedule_get,ko,0,massive,v3
+5035,앞으로 세 달 뭔가 정해놓은 일정이 있어,schedule_get,ko,0,massive,v3
+5036,내가 어떤 리마인더 남겼어,schedule_get,ko,0,massive,v3
+5037,내 미팅 조정해 줘,schedule_get,ko,0,massive,v3
+5038,화요일 점심 미팅은 얼마나 길어,schedule_get,ko,0,massive,v3
+5039,칠순 저녁 식사 몇 시에 시작해,schedule_get,ko,0,massive,v3
+5040,오월 계획이 뭐 있어,schedule_get,ko,0,massive,v3
+5041,오늘 오전 열시 에 알람 생성,reminder_add,ko,0,massive,v3
+5042,이번 주 오전 다섯 시 에 깨워줘,reminder_add,ko,0,massive,v3
+5043,오후 다섯 시 로 내 알람 설정해주세요,reminder_add,ko,0,massive,v3
+5044,내일 아침 여섯 시 에 알람 설정해,reminder_add,ko,0,massive,v3
+5045,오늘 오후 세 시 삼십 분 알람 켜줘,reminder_add,ko,0,massive,v3
+5046,나 오전 여섯시 에 깨워줘야 해,reminder_add,ko,0,massive,v3
+5047,내 아침 알람 켜,reminder_add,ko,0,massive,v3
+5048,나 아침 여섯 시 에 일어나야 한다는 점 명심해,reminder_add,ko,0,massive,v3
+5049,오늘 세 시 알람 설정해줘,reminder_add,ko,0,massive,v3
+5050,나 깨워줘,reminder_add,ko,0,massive,v3
+5051,다음 토요일 오전 여덟 시 에 기상 알람 울려주시겠어요,reminder_add,ko,0,massive,v3
+5052,삼십 분 후 깨워줘,reminder_add,ko,0,massive,v3
+5053,오후 두 시로 알람 맞춰,reminder_add,ko,0,massive,v3
+5054,오전 다섯 시 에 깨워줘,reminder_add,ko,0,massive,v3
+5055,내일 오전 다섯 시 삼십 분 으로 알람 맞춰줘,reminder_add,ko,0,massive,v3
+5056,알람 오전 여섯 시 로 설정해줘,reminder_add,ko,0,massive,v3
+5057,오늘 여섯 시 진영 과의 회의 알람 만들어줘,reminder_add,ko,0,massive,v3
+5058,나는 내일 열 시 에 일어나야 해,reminder_add,ko,0,massive,v3
+5059,다음 금요일 오전 여섯시 삼십분 에 알람 맞춰주세요,reminder_add,ko,0,massive,v3
+5060,알람 몇 시로 설정했어,reminder_get,ko,0,massive,v3
+5061,내가 어떤 알람들 맞췄어,reminder_get,ko,0,massive,v3
+5062,내가 설정한 내 알람들 보여줘,reminder_get,ko,0,massive,v3
+5063,내가 설정한 알람 뭐 있어,reminder_get,ko,0,massive,v3
+5064,오늘 울리는 알람 있어,reminder_get,ko,0,massive,v3
+5065,어떤 알람들 이 설정되었어,reminder_get,ko,0,massive,v3
+5066,나 다음 병원 예약 리마인더 알람 설정하는 거 안 잊어버렸나,reminder_get,ko,0,massive,v3
+5067,현재 나열된 모든 알람,reminder_get,ko,0,massive,v3
+5068,댄스 강습 리마인더 알람 맞춰져 있어,reminder_get,ko,0,massive,v3
+5069,설정된 모든 알람 보고 싶어,reminder_get,ko,0,massive,v3
+5070,내 알람 설정했어,reminder_get,ko,0,massive,v3
+5071,올리 내가 내일 알람 설정해놓은 게 있어,reminder_get,ko,0,massive,v3
+5072,알람 세팅,reminder_get,ko,0,massive,v3
+5073,내일 오전 여섯 시 에 알람 있나,reminder_get,ko,0,massive,v3
+5074,내가 오늘 어떤 알람 맞췄지,reminder_get,ko,0,massive,v3
+5075,내 알람 언제 울려,reminder_get,ko,0,massive,v3
+5076,내 알람 이 내일 아침 으로 설정되어 있어,reminder_get,ko,0,massive,v3
+5077,내 알람들 몇 시에 울려,reminder_get,ko,0,massive,v3
+5078,내 모든 알람 나열해주세요,reminder_get,ko,0,massive,v3
+5079,알람 알려줘,reminder_get,ko,0,massive,v3
+5080,서울 최저 기온 은 몇도야,search_web,ko,0,massive,v3
+5081,유튜브 뉴스 중에 아무거나 흥미로운 거,search_web,ko,0,massive,v3
+5082,전반적인 주식 상황 어때,search_web,ko,0,massive,v3
+5083,유명인이 누구야,search_web,ko,0,massive,v3
+5084,오케이 구글 대통령 이 뭐야,search_web,ko,0,massive,v3
+5085,달러 는 원 으로 얼마야,search_web,ko,0,massive,v3
+5086,나는 한번 씩 주의를 해,search_web,ko,0,massive,v3
+5087,대통령 소식 있니,search_web,ko,0,massive,v3
+5088,엔씨소프트 주가 상세 정보 부탁해,search_web,ko,0,massive,v3
+5089,지구에 있는 나라들의 평균 크기는 몇 제곱 미터야,search_web,ko,0,massive,v3
+5090,나무늘보 설명해줘,search_web,ko,0,massive,v3
+5091,중국 의 현재 환율은 얼마야,search_web,ko,0,massive,v3
+5092,바깥 기온 이 어때,search_web,ko,0,massive,v3
+5093,춘천에 있는 붕괴된 댐에 관한 모든 속보 알려줘,search_web,ko,0,massive,v3
+5094,이 회사 주식의 상승과 하락을 알려줘,search_web,ko,0,massive,v3
+5095,대부분의 유명 인사들은 어디서 놀아,search_web,ko,0,massive,v3
+5096,책 이 뭐야,search_web,ko,0,massive,v3
+5097,달러 에서 유로 로,search_web,ko,0,massive,v3
+5098,야 내일 예상하는 날씨가 어때,search_web,ko,0,massive,v3
+5099,오늘 세계는 어떻니,search_web,ko,0,massive,v3
+5100,블핑 의 휘파람,search_video,ko,0,massive,v3
+5101,헤비메탈 좀 들어보자 오케이,search_video,ko,0,massive,v3
+5102,팔십년대 의 노래들 들려주세요,search_video,ko,0,massive,v3
+5103,나의 재생 목록 에서 무작위의 노래 재생,search_video,ko,0,massive,v3
+5104,아이유 가 부른 노래 틀어,search_video,ko,0,massive,v3
+5105,비틀즈 밴드의 노래 재생,search_video,ko,0,massive,v3
+5106,싸이 아무거나 틀어,search_video,ko,0,massive,v3
+5107,재즈 음악 좀 듣고 싶어,search_video,ko,0,massive,v3
+5108,산울림 음악,search_video,ko,0,massive,v3
+5109,그대라는 사치 재생,search_video,ko,0,massive,v3
+5110,제니 의 솔로 틀어줘,search_video,ko,0,massive,v3
+5111,내가 구입했고 좋아했던 노래들 재생해줘,search_video,ko,0,massive,v3
+5112,너를 생각해,search_video,ko,0,massive,v3
+5113,드라마 재생,search_video,ko,0,massive,v3
+5114,콜드플레이 앨범 틀어,search_video,ko,0,massive,v3
+5115,테마 재생목록 반복해줄 수 있어,search_video,ko,0,massive,v3
+5116,다음 재생할 노래 로 이 노래 추가해,search_video,ko,0,massive,v3
+5117,알렉사 랩 과 락 음악 잇따라 들려줘,search_video,ko,0,massive,v3
+5118,s.,search_video,ko,0,massive,v3
+5119,부드러운 재즈 좀 찾아줄래,search_video,ko,0,massive,v3
+5120,올리야 무슨 일 있어,chat_emotion,ko,0,massive,v3
+5121,재미 있는 농담 뭐 있어,chat_emotion,ko,0,massive,v3
+5122,이 농담 알아,chat_emotion,ko,0,massive,v3
+5123,농담 해봐,chat_emotion,ko,0,massive,v3
+5124,지금 재밌는 농담 좀 해봐,chat_emotion,ko,0,massive,v3
+5125,가장 웃긴 농담 은 뭐야,chat_emotion,ko,0,massive,v3
+5126,재밌는 농담 아는거 있니,chat_emotion,ko,0,massive,v3
+5127,야구 관련한 농담 찾아줘,chat_emotion,ko,0,massive,v3
+5128,웃긴 농담해줘,chat_emotion,ko,0,massive,v3
+5129,좋은 농담 해줘,chat_emotion,ko,0,massive,v3
+5130,똑 똑,chat_emotion,ko,0,massive,v3
+5131,들언것 중에 제일 재밌는 농담 말해줘,chat_emotion,ko,0,massive,v3
+5132,농담,chat_emotion,ko,0,massive,v3
+5133,올리 나에게 농담해줘,chat_emotion,ko,0,massive,v3
+5134,내가 킥킥거리는 소리 보내,chat_emotion,ko,0,massive,v3
+5135,농담 하나 말해줄래,chat_emotion,ko,0,massive,v3
+5136,당신이 아는 가장 웃긴 농담을 말해주세요,chat_emotion,ko,0,massive,v3
+5137,엄청 재밌는 농담 듣고싶어,chat_emotion,ko,0,massive,v3
+5138,너 농담 아는 거 있어,chat_emotion,ko,0,massive,v3
+5139,재밌는 농담 찾아봐,chat_emotion,ko,0,massive,v3

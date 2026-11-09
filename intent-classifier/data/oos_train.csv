@@ -1,0 +1,101 @@
+﻿id,text,category,lang,near,source,version
+o001,엄마한테 문자 보내줘 지금 가는 중이라고,O1,ko,0,ai,v2
+o002,교수님께 과제 연장 요청 메일 써서 보내줘,O1,ko,0,ai,v2
+o003,하윤이한테 전화 좀 걸어줘,O1,ko,0,ai,v2
+o004,카톡으로 팀원들한테 공지 보내줘,O1,ko,0,ai,v2
+o005,인스타 DM으로 친구한테 안부 인사 보내줘,O1,ko,0,ai,v2
+o006,Send a text to Mike saying I'll be late,O1,en,0,ai,v2
+o007,Call my mom for me,O1,en,0,ai,v2
+o008,Email my professor about the extension,O1,en,0,ai,v2
+o009,Reply to Sarah's message with a thumbs up,O1,en,0,ai,v2
+o010,Post a story on my Instagram,O1,en,0,ai,v2
+o011,팀원들한테 내일 회의 있다고 문자 돌려줘,O1,ko,1,ai,v2
+o012,내 이번 주 일정 친구한테 카톡으로 공유해줘,O1,ko,1,ai,v2
+o013,Text Ryan the details of Friday's meeting,O1,en,1,ai,v2
+o014,Email my schedule for next week to my advisor,O1,en,1,ai,v2
+o015,거실 불 꺼줘,O2,ko,0,ai,v2
+o016,에어컨 24도로 맞춰줘,O2,ko,0,ai,v2
+o017,TV 켜고 채널 돌려줘,O2,ko,0,ai,v2
+o018,블루투스 스피커 연결해줘,O2,ko,0,ai,v2
+o019,청소기 돌려줘,O2,ko,0,ai,v2
+o020,Turn off the bedroom lights,O2,en,0,ai,v2
+o021,Set the thermostat to 22 degrees,O2,en,0,ai,v2
+o022,Turn the volume down,O2,en,0,ai,v2
+o023,Lock the front door,O2,en,0,ai,v2
+o024,Connect to my wireless headphones,O2,en,0,ai,v2
+o025,유튜브 영상 일시정지해줘,O2,ko,1,ai,v2
+o026,지금 재생 중인 영상 2배속으로 바꿔줘,O2,ko,1,ai,v2
+o027,음악 볼륨 낮춰줘,O2,ko,1,ai,v2
+o028,Skip this song,O2,en,1,ai,v2
+o029,Pause the video,O2,en,1,ai,v2
+o030,치킨 한 마리 주문해줘,O3,ko,0,ai,v2
+o031,KTX 표 예매해줘,O3,ko,0,ai,v2
+o032,쿠팡에서 휴지 주문해줘,O3,ko,0,ai,v2
+o033,택시 불러줘,O3,ko,0,ai,v2
+o034,이번 달 휴대폰 요금 결제해줘,O3,ko,0,ai,v2
+o035,Order me a pizza,O3,en,0,ai,v2
+o036,Book a table for two tonight,O3,en,0,ai,v2
+o037,Buy two tickets to the concert,O3,en,0,ai,v2
+o038,Pay my electricity bill,O3,en,0,ai,v2
+o039,Get me an Uber to the station,O3,en,0,ai,v2
+o040,내일 3시 치과 진료 예약해줘,O3,ko,1,ai,v2
+o041,스터디카페 자리 예약해줘,O3,ko,1,ai,v2
+o042,Book a haircut for Friday at 4,O3,en,1,ai,v2
+o043,Reserve a meeting room for tomorrow morning,O3,en,1,ai,v2
+o044,바탕화면 파일 정리해줘,O4,ko,0,ai,v2
+o045,이 사진 삭제해줘,O4,ko,0,ai,v2
+o046,컴퓨터 재부팅해줘,O4,ko,0,ai,v2
+o047,PDF를 워드 파일로 변환해줘,O4,ko,0,ai,v2
+o048,다운로드 폴더 비워줘,O4,ko,0,ai,v2
+o049,Take a screenshot of my screen,O4,en,0,ai,v2
+o050,Install Python on my laptop,O4,en,0,ai,v2
+o051,Rename this folder to Project,O4,en,0,ai,v2
+o052,Compress these files into a zip,O4,en,0,ai,v2
+o053,Open the settings app,O4,en,0,ai,v2
+o054,저장된 메모를 txt 파일로 내려받게 해줘,O4,ko,1,ai,v2
+o055,알림 목록을 엑셀로 뽑아줘,O4,ko,1,ai,v2
+o056,Export my calendar to a spreadsheet,O4,en,1,ai,v2
+o057,Download all my notes as a file,O4,en,1,ai,v2
+o058,Save this conversation as a PDF,O4,en,1,ai,v2
+o059,내일 3시 회의 4시로 옮겨줘,O5,ko,1,ai,v2
+o060,금요일 약속 취소해줘,O5,ko,1,ai,v2
+o061,7시 알림 삭제해줘,O5,ko,1,ai,v2
+o062,알림 시간을 8시로 바꿔줘,O5,ko,1,ai,v2
+o063,일정 제목을 팀 회의로 수정해줘,O5,ko,1,ai,v2
+o064,오늘 일정 전부 지워줘,O5,ko,1,ai,v2
+o065,리마인더 하나 완료 처리해줘,O5,ko,1,ai,v2
+o066,다음 주 월요일 일정 하루 미뤄줘,O5,ko,1,ai,v2
+o067,Move my Friday meeting to Monday,O5,en,1,ai,v2
+o068,Cancel my dentist appointment,O5,en,1,ai,v2
+o069,Delete the reminder for tonight,O5,en,1,ai,v2
+o070,Reschedule tomorrow's lecture to Thursday,O5,en,1,ai,v2
+o071,Snooze my 6 pm reminder by an hour,O5,en,1,ai,v2
+o072,Remove the study group from my calendar,O5,en,1,ai,v2
+o073,비 오면 우산 챙기라고 알려줘,O6,ko,1,ai,v2
+o074,월급 들어오면 알려줘,O6,ko,1,ai,v2
+o075,택배 도착하면 알림 줘,O6,ko,1,ai,v2
+o076,엄마한테 전화 오면 알려줘,O6,ko,1,ai,v2
+o077,교수님이 공지 올리면 바로 알려줘,O6,ko,1,ai,v2
+o078,배터리 20% 이하면 알려줘,O6,ko,1,ai,v2
+o079,환율이 1400원 넘으면 알려줘,O6,ko,1,ai,v2
+o080,매주 월요일마다 날씨 요약을 자동으로 보내줘,O6,ko,1,ai,v2
+o081,"If it rains tomorrow, remind me to bring an umbrella",O6,en,1,ai,v2
+o082,"Tell me when the stock hits 80,000",O6,en,1,ai,v2
+o083,Notify me whenever a new episode comes out,O6,en,1,ai,v2
+o084,"Whenever I get an email from my boss, remind me to reply",O6,en,1,ai,v2
+o085,Alert me if the temperature drops below zero,O6,en,1,ai,v2
+o086,Let me know as soon as my package arrives,O6,en,1,ai,v2
+o087,내 비밀번호 바꿔줘,O7,ko,0,ai,v2
+o088,다크 모드로 바꿔줘,O7,ko,0,ai,v2
+o089,언어를 영어로 변경해줘,O7,ko,0,ai,v2
+o090,구독 취소해줘,O7,ko,0,ai,v2
+o091,계정 탈퇴시켜줘,O7,ko,0,ai,v2
+o092,Change my profile picture,O7,en,0,ai,v2
+o093,Log me out of everything,O7,en,0,ai,v2
+o094,Delete my account,O7,en,0,ai,v2
+o095,Update my email address in settings,O7,en,0,ai,v2
+o096,Switch my account to the premium plan,O7,en,0,ai,v2
+o097,Lumi 목소리를 다른 걸로 바꿔줘,O7,ko,1,ai,v2
+o098,음성 읽어주는 속도를 빠르게 설정해줘,O7,ko,1,ai,v2
+o099,알림 기능 꺼줘,O7,ko,1,ai,v2
+o100,Turn off notifications for reminders,O7,en,1,ai,v2
