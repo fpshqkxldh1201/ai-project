@@ -311,6 +311,9 @@ public class GeminiService {
     /** 의도 라우터(날씨·웹검색·뉴스는 Gemini 없이 처리). 빈이 없거나 꺼져 있으면 건너뛴다. */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private IntentRouterService intentRouter;
+    /** 날씨 질문을 예보 수치(Open-Meteo)로 답한다. 빈이 없거나 조회가 실패하면 기존 NAVER 검색 흐름으로 간다. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private WeatherLookupService weatherLookup;
 
     public GeminiService(@Value("${gemini.api.base-url}") String baseUrl,
                           @Value("${gemini.model}") String model,
@@ -721,6 +724,12 @@ public class GeminiService {
             if (query == null || query.isBlank() || blockPersonLookup(query)) {
                 return null; // 신상 검색 의심 등은 Gemini의 기존 거절 흐름에 맡긴다.
             }
+            if (decision.intent() == IntentRouterService.Intent.WEATHER && weatherLookup != null) {
+                ChatResult weather = tryWeatherDirect(router, decision, query, message, userParts, emotionFuture, toneLabel, startedAt);
+                if (weather != null) {
+                    return weather;
+                }
+            }
             Map<String, Object> raw = decision.intent() == IntentRouterService.Intent.NEWS
                     ? naverSearchService.searchNews(query, 5)
                     : naverSearchService.search(query, 5);
@@ -764,6 +773,40 @@ public class GeminiService {
             log.warn("[라우터] 처리 중 오류 — Gemini로 넘김: {}", e.toString());
             return null;
         }
+    }
+
+    /**
+     * 날씨: 웹 검색 대신 예보 수치(Open-Meteo)를 근거로 작은 모델이 답하고, 기온 추이 카드를 1장 붙인다.
+     * 지역을 못 찾거나 예보·요약이 실패하면 null — 호출한 쪽이 NAVER 검색 흐름으로 이어간다.
+     */
+    private ChatResult tryWeatherDirect(IntentRouterService router, IntentRouterService.Decision decision, String query,
+                                        String message, List<GeminiPart> userParts,
+                                        CompletableFuture<EmotionResult> emotionFuture, String toneLabel, long startedAt) {
+        WeatherLookupService.Result found = weatherLookup.lookup(query).orElse(null);
+        if (found == null) {
+            return null;
+        }
+        List<String> hints = new ArrayList<>();
+        for (GeminiPart p : userParts) {
+            String t = p.text();
+            if (t != null && (t.startsWith("[내부 감정분석") || t.startsWith("[답변 언어 지정"))) {
+                hints.add(t);
+            }
+        }
+        String block = "지역: " + found.place() + " (Open-Meteo 예보 수치, 섭씨). 날짜별 줄 중 첫 줄이 오늘, 그다음 줄이 내일입니다.\n"
+                + found.digest();
+        String reply = router.summarize(SYSTEM_PROMPT + currentTimeBlock() + FORMULA_RULE, message, decision, block, hints)
+                .orElse(null);
+        if (reply == null) {
+            return null;
+        }
+        if (found.card() != null) {
+            ResultCardContext.addAll(List.of(found.card()));
+        }
+        log.info("[라우터] WEATHER → 예보 수치로 직접 처리 완료 ({}ms, place={}, Gemini 호출 없음)",
+                (System.nanoTime() - startedAt) / 1_000_000, found.place());
+        return new ChatResult(guardReply(reply), resolveEmotion(emotionFuture), List.of(),
+                joinEvidence(List.of("[Open-Meteo] " + found.place() + " 예보 수치")), toneLabel);
     }
 
     /** 응답에 시스템 프롬프트 표식이 섞여 있으면(유출) 응답 전체를 안내 문구로 바꾼다. */
