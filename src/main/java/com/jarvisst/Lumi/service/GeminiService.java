@@ -601,11 +601,19 @@ public class GeminiService {
                     .orElse(null);
 
             if (functionCall == null) {
-                String reply = parts.stream()
+                // 긴 답변은 모델이 글을 여러 파트로 나눠 보내는 경우가 있다. 첫 파트만 쓰면 답이 중간에서 끊기므로 글 파트를 모두 이어 붙인다.
+                String joinedText = parts.stream()
                         .map(GeminiPart::text)
-                        .filter(t -> t != null)
-                        .findFirst()
-                        .orElse("죄송합니다, 지금은 응답을 받아오지 못했습니다.");
+                        .filter(t -> t != null && !t.isEmpty())
+                        .collect(Collectors.joining());
+                String reply = joinedText.isBlank() ? "죄송합니다, 지금은 응답을 받아오지 못했습니다." : joinedText;
+                String finishReason = response.candidates().get(0).finishReason();
+                if (finishReason != null && !"STOP".equalsIgnoreCase(finishReason)) {
+                    log.warn("[Gemini 응답] 정상 종료가 아님 finishReason={}, 글자 수={}", finishReason, reply.length());
+                    if ("MAX_TOKENS".equalsIgnoreCase(finishReason)) {
+                        reply = reply + "\n\n(답변이 길어서 여기서 끊겼어요. \"이어서 말해줘\"라고 하면 이어갈게요.)";
+                    }
+                }
                 return new ChatResult(guardReply(reply), resolveEmotion(emotionFuture), distinctLinks(links), joinEvidence(evidence), toneLabel);
             }
 
