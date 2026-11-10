@@ -116,6 +116,13 @@ public class GeminiService {
               않고 짧게 되물어 의도를 확인합니다.
             - 일정 등록/조회는 반드시 get_schedules, add_schedule 함수를 사용하고,
               실제로 조회되지 않은 일정을 지어내서 말하지 않습니다.
+            - 일정을 등록했다고 말하기 전에 add_schedule 응답의 saved가 true인지 확인하고, error가
+              돌아왔으면 등록되지 않았다고 솔직히 말하고 이유를 안내합니다. 요일이 다른 일정이 여러 개면
+              add_schedule을 일정마다 한 번씩 호출합니다.
+            - 매주 반복되는 일정(예: 매주 화요일 수업)은 요일마다 add_schedule을 한 번씩 호출하되
+              repeatWeeks에 반복할 주 수(첫 주 포함)를 넣습니다. 학기 수업처럼 기간을 말하지 않았으면 16주로
+              하고, 등록한 뒤 "앞으로 16주 동안 등록했어요"처럼 기간을 알려줍니다. startTime은 오늘 이후
+              가장 가까운 해당 요일의 날짜로 계산합니다(이미 지난 날짜로 넣지 않습니다).
             - 리마인더 등록/조회는 반드시 get_reminders, add_reminder 함수를 사용하고,
               일정(약속·회의)과 리마인더(짧은 할 일 알림)를 혼동하지 않습니다.
             - 최신 뉴스, 가격, 사실 확인 등 학습 데이터만으로 확신할 수 없는 정보는
@@ -195,7 +202,9 @@ public class GeminiService {
                                             "description", "일정 시작 시각, ISO-8601 형식 (예: 2026-09-10T14:00:00)"),
                                     "endTime", Map.of("type", "STRING",
                                             "description", "일정 종료 시각, ISO-8601 형식 (선택 — 없으면 시작 시각+1시간으로 자동 설정)"),
-                                    "memo", Map.of("type", "STRING", "description", "메모 (선택)")
+                                    "memo", Map.of("type", "STRING", "description", "메모 (선택)"),
+                                    "repeatWeeks", Map.of("type", "INTEGER",
+                                            "description", "매주 같은 요일·시각에 반복할 총 주 수(첫 주 포함, 선택). 반복 일정일 때만 넣고 최대 20. 없으면 1회만 등록")
                             ),
                             "required", List.of("title", "startTime")
                     )
@@ -594,13 +603,13 @@ public class GeminiService {
                 return new ChatResult("죄송합니다, 지금은 응답을 받아오지 못했습니다.", resolveEmotion(emotionFuture));
             }
 
-            GeminiFunctionCall functionCall = parts.stream()
+            // 모델이 한 번에 함수를 여러 개 부르는 경우(예: 화요일·수요일 일정을 각각 등록)가 있다. 첫 번째만 실행하면 나머지가 조용히 버려진다.
+            List<GeminiFunctionCall> functionCalls = parts.stream()
                     .map(GeminiPart::functionCall)
                     .filter(fc -> fc != null)
-                    .findFirst()
-                    .orElse(null);
+                    .toList();
 
-            if (functionCall == null) {
+            if (functionCalls.isEmpty()) {
                 // 긴 답변은 모델이 글을 여러 파트로 나눠 보내는 경우가 있다. 첫 파트만 쓰면 답이 중간에서 끊기므로 글 파트를 모두 이어 붙인다.
                 String joinedText = parts.stream()
                         .map(GeminiPart::text)
@@ -617,15 +626,23 @@ public class GeminiService {
                 return new ChatResult(guardReply(reply), resolveEmotion(emotionFuture), distinctLinks(links), joinEvidence(evidence), toneLabel);
             }
 
-            GeminiFunctionResponse functionResponse = executeFunctionCall(functionCall, links, evidence,
-                    new NoteIntent(!isGreetingTrigger && KnowledgeNoteService.hasSaveIntent(message),
-                            !isGreetingTrigger && KnowledgeNoteService.hasDeleteIntent(message)));
+            NoteIntent noteIntent = new NoteIntent(!isGreetingTrigger && KnowledgeNoteService.hasSaveIntent(message),
+                    !isGreetingTrigger && KnowledgeNoteService.hasDeleteIntent(message));
+            List<GeminiPart> responseParts = new ArrayList<>();
+            for (int i = 0; i < functionCalls.size(); i++) {
+                GeminiFunctionCall call = functionCalls.get(i);
+                // 한 턴에 너무 많은 호출은 실행하지 않는다(남용 방지). 응답 개수는 호출 개수와 맞춰야 하므로 거절 응답을 채운다.
+                GeminiFunctionResponse r = i < MAX_CALLS_PER_TURN
+                        ? executeFunctionCall(call, links, evidence, noteIntent)
+                        : new GeminiFunctionResponse(call.name(), Map.of("error", "한 번에 처리할 수 있는 함수 호출 수를 넘었습니다. 나머지는 다시 요청해 달라고 안내하세요."));
+                responseParts.add(GeminiPart.ofFunctionResponse(r));
+            }
             contents.add(new GeminiContent("model", parts));
             // 최신 Gemini API(v1beta)는 함수 실행 결과를 "function" role로 받지 않는다
             // ("Role 'function' is not supported" 400 에러). 함수 응답 파트는 "user" role로
             // 돌려줘야 한다 — functionResponse 파트가 들어있다는 것만으로 Gemini가 이를
             // "사용자의 일반 메시지가 아니라 함수 실행 결과"로 정확히 구분해서 처리한다.
-            contents.add(new GeminiContent("user", List.of(GeminiPart.ofFunctionResponse(functionResponse))));
+            contents.add(new GeminiContent("user", responseParts));
         }
 
         return new ChatResult("죄송합니다, 요청 처리가 너무 길어져 중단했습니다.", resolveEmotion(emotionFuture));
@@ -636,6 +653,9 @@ public class GeminiService {
      * 최소 1번은 끝난 뒤라 보통은 바로 나온다 — 혹시 몰라 2초까지만 기다리고, 그래도
      * 안 끝났거나 실패했으면 배지 없이 null로 돌려준다(대화 자체는 막지 않음).
      */
+    /** 한 번의 모델 응답에서 실행하는 함수 호출 수의 상한. */
+    private static final int MAX_CALLS_PER_TURN = 8;
+
     private static final long EMOTION_WAIT_MS = 1200;
     private static final long EMOTION_WAIT_IMAGE_MS = 2500;
 
@@ -1004,6 +1024,7 @@ public class GeminiService {
         if (memo != null && memo.isBlank()) {
             memo = null;
         }
+        int repeatWeeks = parseRepeatWeeks(args.get("repeatWeeks"));
 
         if (title == null || title.isBlank() || start == null) {
             return Map.of("error", "title과 startTime(ISO-8601)은 필수입니다.");
@@ -1012,21 +1033,71 @@ public class GeminiService {
             return Map.of("error", "일정 시각이 올바른 범위(과거 1년 ~ 향후 5년)가 아니거나 종료가 시작보다 빠릅니다.");
         }
 
-        ScheduleService.ScheduleAddResult result = scheduleService.add(title, start, end, memo);
+        // 이미 지난 시각이면: 반복 일정은 같은 요일·시각이 되도록 한 주씩 앞으로 밀고, 반복이 아니면 날짜를 다시 확인하게 한다.
+        // (지난 일정은 "지금 이후" 조회에 나오지 않아서, 그대로 저장하면 등록했는데 없다고 나온다.)
+        LocalDateTime now = LocalDateTime.now();
+        if (start.isBefore(now.minusMinutes(5))) {
+            if (repeatWeeks > 1) {
+                for (int guard = 0; guard < 80 && start.isBefore(now.minusMinutes(5)); guard++) {
+                    start = start.plusWeeks(1);
+                    end = end == null ? null : end.plusWeeks(1);
+                }
+            } else {
+                return Map.of("error", "일정 시작 시각(" + start + ")이 이미 지났습니다. 현재는 " + now.withNano(0)
+                        + "입니다. 요일을 말한 것이면 오늘 이후 가장 가까운 그 요일 날짜로 다시 계산해서 add_schedule을 다시 호출하고, "
+                        + "정말 지난 일정을 기록하려는 건지 불분명하면 사용자에게 날짜를 확인하세요.");
+            }
+        }
+
+        List<String> conflicts = new ArrayList<>();
+        LocalDateTime firstStart = null;
+        LocalDateTime lastStart = null;
+        String savedTitle = title;
+        for (int i = 0; i < repeatWeeks; i++) {
+            ScheduleService.ScheduleAddResult result = scheduleService.add(title, start.plusWeeks(i),
+                    end == null ? null : end.plusWeeks(i), memo);
+            savedTitle = result.saved().getTitle();
+            if (firstStart == null) {
+                firstStart = result.saved().getStartTime();
+            }
+            lastStart = result.saved().getStartTime();
+            for (Schedule s : result.overlapping()) {
+                if (conflicts.size() < 5) {
+                    conflicts.add(s.getTitle() + " (" + s.getStartTime() + ")");
+                }
+            }
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("saved", true);
-        response.put("title", result.saved().getTitle());
-        response.put("startTime", result.saved().getStartTime().toString());
-        if (!result.overlapping().isEmpty()) {
+        response.put("title", savedTitle);
+        response.put("startTime", firstStart.toString());
+        if (repeatWeeks > 1) {
+            response.put("repeatWeeks", repeatWeeks);
+            response.put("lastStartTime", lastStart.toString());
+        }
+        if (!conflicts.isEmpty()) {
             response.put("hasConflict", true);
-            response.put("conflictingSchedules", result.overlapping().stream()
-                    .map(s -> s.getTitle() + " (" + s.getStartTime() + ")")
-                    .toList());
+            response.put("conflictingSchedules", conflicts);
         } else {
             response.put("hasConflict", false);
         }
         return response;
+    }
+
+    /** 반복 주 수: 없거나 이상한 값이면 1(반복 없음), 최대 20. */
+    private int parseRepeatWeeks(Object value) {
+        int n = 1;
+        if (value instanceof Number num) {
+            n = num.intValue();
+        } else if (value instanceof String str) {
+            try {
+                n = Integer.parseInt(str.strip());
+            } catch (NumberFormatException e) {
+                n = 1;
+            }
+        }
+        return Math.max(1, Math.min(20, n));
     }
 
     private Map<String, Object> handleGetReminders() {
