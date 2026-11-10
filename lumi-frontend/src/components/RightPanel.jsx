@@ -1,9 +1,18 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { pad } from '../hooks/useClock.js'
 import { useLumi } from '../context/LumiContext.jsx'
 import { countdownText, reminderWhen, weekBuckets } from '../utils/dashboardTime.js'
 
-const SCHEDULE_ROWS = 6 // 패널에 보여줄 일정 개수(나머지는 '외 N건')
+const SCHEDULE_COLLAPSED_ROWS = 3 // 접힌 상태에서 보여줄 일정 개수(나머지는 펼치기 버튼)
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
+const dayKeyOf = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+function dayLabel(d, now) {
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+  const base = pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' (' + WEEKDAYS[d.getDay()] + ')'
+  if (dayKeyOf(d) === dayKeyOf(now)) return base + ' · 오늘'
+  if (dayKeyOf(d) === dayKeyOf(tomorrow)) return base + ' · 내일'
+  return base
+}
 const REMINDER_ROWS = 4 // 패널에 보여줄 개수(나머지는 '외 N건')
 
 export default function RightPanel() {
@@ -11,6 +20,7 @@ export default function RightPanel() {
   const [noteText, setNoteText] = useState('')
   // 남은 시간 표시가 가만히 있어도 줄어들도록 30초마다 현재 시각을 갱신
   const [now, setNow] = useState(() => new Date())
+  const [schedOpen, setSchedOpen] = useState(false)
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30000)
     return () => clearInterval(id)
@@ -59,10 +69,14 @@ export default function RightPanel() {
 
       <div className="sched-block">
         <div className="panel-header">
-          <span>TODAY'S SCHEDULE</span>
-          <span className="tag">{loaded ? count + ' ITEMS' : '- ITEMS'}</span>
+          <span>SCHEDULE</span>
+          <span className="tag">
+            {loaded
+              ? (rows.length === 0 ? '0 ITEMS' : '오늘 ' + rows.filter((s) => dayKeyOf(s._start) === dayKeyOf(now)).length + ' · 전체 ' + count)
+              : '- ITEMS'}
+          </span>
         </div>
-        <div className="sched-list">
+        <div className={'sched-list' + (schedOpen ? ' expanded' : '')}>
           {!loaded && (
             <div className="sched-row">
               <span className="sched-title" style={{ color: '#4A6472' }}>일정을 불러오는 중...</span>
@@ -73,19 +87,31 @@ export default function RightPanel() {
               <span className="sched-title" style={{ color: '#4A6472' }}>등록된 일정이 없습니다</span>
             </div>
           )}
-          {rows.slice(0, SCHEDULE_ROWS).map((s) => (
-            <div className={'sched-row' + (s.isNext ? ' next' : '')} key={s.id ?? s.title + s.startTime}>
-              <span className="sched-time">{pad(s._start.getHours())}:{pad(s._start.getMinutes())}</span>
-              <div>
-                <div className="sched-title">{s.title}</div>
-                {s.hasConflict && <div className="sched-note">CONFLICT</div>}
-              </div>
-            </div>
-          ))}
-          {rows.length > SCHEDULE_ROWS && (
-            <div className="mood-empty" style={{ marginTop: 6 }}>외 {rows.length - SCHEDULE_ROWS}건</div>
-          )}
+          {(schedOpen ? rows : rows.slice(0, SCHEDULE_COLLAPSED_ROWS)).map((s, i, arr) => {
+            const showDay = schedOpen && (i === 0 || dayKeyOf(arr[i - 1]._start) !== dayKeyOf(s._start))
+            const showWhen = !schedOpen && dayKeyOf(s._start) !== dayKeyOf(now)
+            return (
+              <Fragment key={s.id ?? s.title + s.startTime}>
+                {showDay && (
+                  <div className={'sched-day' + (dayKeyOf(s._start) === dayKeyOf(now) ? ' today' : '')}>{dayLabel(s._start, now)}</div>
+                )}
+                <div className={'sched-row' + (s.isNext ? ' next' : '')}>
+                  <span className="sched-time">{pad(s._start.getHours())}:{pad(s._start.getMinutes())}</span>
+                  <div style={{ flex: 1 }}>
+                    <div className="sched-title">{s.title}</div>
+                    {showWhen && <div className="sched-when">{dayLabel(s._start, now)}</div>}
+                    {s.hasConflict && <div className="sched-note">CONFLICT</div>}
+                  </div>
+                </div>
+              </Fragment>
+            )
+          })}
         </div>
+        {rows.length > SCHEDULE_COLLAPSED_ROWS && (
+          <button type="button" className="sched-toggle" aria-expanded={schedOpen} onClick={() => setSchedOpen((v) => !v)}>
+            {schedOpen ? '접기 ▴' : '전체 ' + rows.length + '건 펼치기 ▾'}
+          </button>
+        )}
         {conflictAlert && (
           <div className="alert-card">
             <div className="title">SCHEDULE CONFLICT</div>

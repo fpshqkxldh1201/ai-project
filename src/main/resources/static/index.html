@@ -116,6 +116,15 @@
   .sched-time { font-family: 'Share Tech Mono', monospace; color: rgba(63,224,255,0.55); width: 44px; flex-shrink: 0; font-size: 0.74rem; }
   .sched-row.next .sched-time, .sched-row.next .sched-title { color: var(--cyan); }
   .sched-title { color: #E4F7FF; flex: 1; }
+  .sched-list.expanded { max-height: 300px; overflow-y: auto; padding-right: 4px; }
+  .sched-list.expanded::-webkit-scrollbar { width: 4px; }
+  .sched-list.expanded::-webkit-scrollbar-thumb { background: rgba(63,224,255,0.25); border-radius: 2px; }
+  .sched-day { font-family: 'Share Tech Mono', monospace; font-size: 0.66rem; letter-spacing: 1px; color: rgba(63,224,255,0.7); padding: 8px 0 4px; border-top: 1px solid rgba(63,224,255,0.12); }
+  .sched-day:first-child { border-top: none; padding-top: 0; }
+  .sched-day.today { color: var(--cyan); }
+  .sched-when { font-size: 0.62rem; color: #4A6472; font-family: 'Share Tech Mono', monospace; margin-top: 2px; }
+  .sched-toggle { width: 100%; margin-top: 8px; padding: 6px 0; background: transparent; border: 1px solid rgba(63,224,255,0.25); border-radius: 6px; color: rgba(63,224,255,0.8); font-family: 'Rajdhani', sans-serif; font-size: 0.74rem; font-weight: 600; letter-spacing: 0.5px; cursor: pointer; }
+  .sched-toggle:hover { background: rgba(63,224,255,0.08); }
   .sched-note { font-family: 'Rajdhani', sans-serif; font-size: 0.62rem; font-weight: 600; color: var(--amber); margin-top: 3px; letter-spacing: 0.5px; }
 
   .alert-card {
@@ -450,7 +459,7 @@
       </div>
 
       <div class="sched-block">
-        <div class="panel-header"><span>TODAY'S SCHEDULE</span><span class="tag" id="schedCount">- ITEMS</span></div>
+        <div class="panel-header"><span>SCHEDULE</span><span class="tag" id="schedCount">- ITEMS</span></div>
         <div class="sched-list" id="schedList">
           <div class="sched-row"><span class="sched-title" style="color:#4A6472;">일정을 불러오는 중...</span></div>
         </div>
@@ -2031,7 +2040,6 @@
   let lastSchedules = null;  // null = 아직 조회 전
   let lastReminders = null;
   const REMINDER_ROWS = 4;
-  const SCHEDULE_ROWS = 6;
 
   function dayKey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
 
@@ -2146,11 +2154,28 @@
 
   // 서버는 각 일정을 개별로만 알고 있으므로(hasConflict는 add 시점에만 계산),
   // 화면에 표시할 전체 목록 기준 겹침은 여기서 다시 한 번 계산한다.
+  let schedExpanded = false;
+  const SCHEDULE_COLLAPSED_ROWS = 3;
+
+  function scheduleDayLabel(d, now) {
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const base = pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' (' + WEEKDAYS[d.getDay()] + ')';
+    if (dayKey(d) === dayKey(now)) return base + ' · 오늘';
+    if (dayKey(d) === dayKey(tomorrow)) return base + ' · 내일';
+    return base;
+  }
+
   function renderSchedules(schedules) {
     lastSchedules = schedules;
     renderDashboard();
-    schedCount.textContent = schedules.length + ' ITEMS';
     schedList.innerHTML = '';
+    schedList.classList.remove('expanded');
+    const oldToggle = document.getElementById('schedToggle');
+    if (oldToggle) oldToggle.remove();
+
+    const now = new Date();
+    const todayCount = schedules.filter((s) => dayKey(new Date(s.startTime)) === dayKey(now)).length;
+    schedCount.textContent = schedules.length === 0 ? '0 ITEMS' : '오늘 ' + todayCount + ' · 전체 ' + schedules.length;
 
     if (schedules.length === 0) {
       const row = document.createElement('div');
@@ -2162,7 +2187,6 @@
     }
 
     const sorted = [...schedules].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
-    const now = new Date();
     const conflicts = [];
     for (let i = 0; i < sorted.length; i++) {
       const aStart = new Date(sorted[i].startTime);
@@ -2173,26 +2197,28 @@
         if (aStart < bEnd && bStart < aEnd) conflicts.push([sorted[i], sorted[j]]);
       }
     }
+    const nextIdx = sorted.findIndex((s) => new Date(s.startTime) >= now);
 
-    let nextAssigned = false;
-    sorted.forEach((s, idx) => {
+    function makeRow(s, idx, withWhen) {
       const start = new Date(s.startTime);
-      const isNext = !nextAssigned && start >= now;
-      if (isNext) nextAssigned = true;
-      const hasConflict = conflicts.some(([a, b]) => a === s || b === s);
-      if (idx >= SCHEDULE_ROWS) return; // 패널에는 앞쪽 몇 개만(나머지는 '외 N건')
-
       const row = document.createElement('div');
-      row.className = 'sched-row' + (isNext ? ' next' : '');
+      row.className = 'sched-row' + (idx === nextIdx ? ' next' : '');
       const time = document.createElement('span');
       time.className = 'sched-time';
       time.textContent = pad(start.getHours()) + ':' + pad(start.getMinutes());
       const box = document.createElement('div');
+      box.style.flex = '1';
       const title = document.createElement('div');
       title.className = 'sched-title';
       title.textContent = s.title;
       box.appendChild(title);
-      if (hasConflict) {
+      if (withWhen && dayKey(start) !== dayKey(now)) {
+        const w = document.createElement('div');
+        w.className = 'sched-when';
+        w.textContent = scheduleDayLabel(start, now);
+        box.appendChild(w);
+      }
+      if (conflicts.some(([a, b]) => a === s || b === s)) {
         const note = document.createElement('div');
         note.className = 'sched-note';
         note.textContent = 'CONFLICT';
@@ -2200,14 +2226,39 @@
       }
       row.appendChild(time);
       row.appendChild(box);
-      schedList.appendChild(row);
-    });
-    if (sorted.length > SCHEDULE_ROWS) {
-      const more = document.createElement('div');
-      more.className = 'mood-empty';
-      more.style.marginTop = '6px';
-      more.textContent = '외 ' + (sorted.length - SCHEDULE_ROWS) + '건';
-      schedList.appendChild(more);
+      return row;
+    }
+
+    if (schedExpanded) {
+      // 펼침: 날짜별로 묶어 스크롤 영역에 전부 보여 준다
+      schedList.classList.add('expanded');
+      let lastDay = null;
+      sorted.forEach((s, idx) => {
+        const start = new Date(s.startTime);
+        const k = dayKey(start);
+        if (k !== lastDay) {
+          lastDay = k;
+          const h = document.createElement('div');
+          h.className = 'sched-day' + (k === dayKey(now) ? ' today' : '');
+          h.textContent = scheduleDayLabel(start, now);
+          schedList.appendChild(h);
+        }
+        schedList.appendChild(makeRow(s, idx, false));
+      });
+    } else {
+      // 접힘: 가장 가까운 몇 건만 (오늘이 아니면 날짜를 같이 표시)
+      sorted.slice(0, SCHEDULE_COLLAPSED_ROWS).forEach((s, idx) => schedList.appendChild(makeRow(s, idx, true)));
+    }
+
+    if (sorted.length > SCHEDULE_COLLAPSED_ROWS) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = 'schedToggle';
+      btn.className = 'sched-toggle';
+      btn.setAttribute('aria-expanded', schedExpanded ? 'true' : 'false');
+      btn.textContent = schedExpanded ? '접기 ▴' : '전체 ' + sorted.length + '건 펼치기 ▾';
+      btn.addEventListener('click', () => { schedExpanded = !schedExpanded; renderSchedules(lastSchedules); });
+      schedList.after(btn);
     }
 
     if (conflicts.length > 0) {

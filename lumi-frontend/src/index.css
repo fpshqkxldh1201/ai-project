@@ -101,6 +101,13 @@
   .sched-time { font-family: 'Share Tech Mono', monospace; color: rgba(63,224,255,0.55); width: 44px; flex-shrink: 0; font-size: 0.74rem; }
   .sched-row.next .sched-time, .sched-row.next .sched-title { color: var(--cyan); }
   .sched-title { color: #E4F7FF; flex: 1; }
+  .sched-list.expanded { max-height: 300px; overflow-y: auto; padding-right: 4px; }
+  .sched-day { font-family: 'Share Tech Mono', monospace; font-size: 0.66rem; letter-spacing: 1px; color: rgba(63,224,255,0.7); padding: 8px 0 4px; border-top: 1px solid rgba(63,224,255,0.12); }
+  .sched-day:first-child { border-top: none; padding-top: 0; }
+  .sched-day.today { color: var(--cyan); }
+  .sched-when { font-size: 0.62rem; color: #4A6472; font-family: 'Share Tech Mono', monospace; margin-top: 2px; }
+  .sched-toggle { width: 100%; margin-top: 8px; padding: 6px 0; background: transparent; border: 1px solid rgba(63,224,255,0.25); border-radius: 6px; color: rgba(63,224,255,0.8); font-family: 'Rajdhani', sans-serif; font-size: 0.74rem; font-weight: 600; letter-spacing: 0.5px; cursor: pointer; }
+  .sched-toggle:hover { background: rgba(63,224,255,0.08); }
   .sched-note { font-family: 'Rajdhani', sans-serif; font-size: 0.62rem; font-weight: 600; color: var(--amber); margin-top: 3px; letter-spacing: 0.5px; }
 
   .alert-card {
