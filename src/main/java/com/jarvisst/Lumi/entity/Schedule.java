@@ -93,6 +93,17 @@ public class Schedule {
         return notified != null && notified;
     }
 
+    /** 제목·시각·메모를 고친다. 시작 시각이 바뀌면 임박 알림을 다시 받을 수 있게 알림 표시를 지운다. */
+    public void update(String title, LocalDateTime startTime, LocalDateTime endTime, String memo) {
+        if (!this.startTime.equals(startTime)) {
+            this.notified = false;
+        }
+        this.title = title;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.memo = memo;
+    }
+
     public void markNotified() {
         this.notified = true;
     }

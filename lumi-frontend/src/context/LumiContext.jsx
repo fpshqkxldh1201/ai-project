@@ -538,6 +538,47 @@ export function LumiProvider({ children }) {
     }
   }
 
+  // 일정 수정·삭제(서버가 본인 일정만 허용). 실패하면 사유를 문자열로 돌려준다(성공이면 null).
+  async function scheduleRequest(method, url, body) {
+    const res = await fetch(url, {
+      method,
+      headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), 'X-XSRF-TOKEN': getCsrfToken() },
+      body: body ? JSON.stringify(body) : undefined,
+    })
+    let data = null
+    try { data = await res.json() } catch { /* 본문 없음 */ }
+    if (!res.ok) throw new Error((data && data.error) || 'HTTP ' + res.status)
+    return data
+  }
+  async function updateSchedule(id, { title, startTime, endTime }) {
+    try {
+      await scheduleRequest('PUT', '/api/schedules/' + id, { title, startTime, endTime: endTime || null })
+      upsertToast('schedule', 'success', 'SCHEDULE UPDATED', '일정을 수정했습니다')
+      await refreshSchedules()
+      return null
+    } catch (err) {
+      return err.message
+    }
+  }
+  async function deleteSchedule(id) {
+    try {
+      await scheduleRequest('DELETE', '/api/schedules/' + id)
+      upsertToast('schedule', 'success', 'SCHEDULE DELETED', '일정을 삭제했습니다')
+    } catch (err) {
+      upsertToast('schedule', 'error', 'SCHEDULE DELETE FAILED', '삭제 실패: ' + err.message)
+    }
+    await refreshSchedules()
+  }
+  async function deleteScheduleSeries(title) {
+    try {
+      const r = await scheduleRequest('DELETE', '/api/schedules?title=' + encodeURIComponent(title))
+      upsertToast('schedule', 'success', 'SCHEDULE DELETED', "'" + title + "' " + r.deleted + '건을 삭제했습니다')
+    } catch (err) {
+      upsertToast('schedule', 'error', 'SCHEDULE DELETE FAILED', '삭제 실패: ' + err.message)
+    }
+    await refreshSchedules()
+  }
+
   async function refreshUsage() {
     try {
       const res = await fetch('/api/usage')
@@ -1012,7 +1053,7 @@ export function LumiProvider({ children }) {
     pendingImage, attachImage, clearImage,
 
     // 대시보드
-    schedules: scheduleView, usage,
+    schedules: scheduleView, usage, updateSchedule, deleteSchedule, deleteScheduleSeries,
     moodDays, refreshMood, clearMoodLog,
     secStatus, refreshSecurity,
     reminders, refreshReminders,

@@ -116,6 +116,20 @@
   .sched-time { font-family: 'Share Tech Mono', monospace; color: rgba(63,224,255,0.55); width: 44px; flex-shrink: 0; font-size: 0.74rem; }
   .sched-row.next .sched-time, .sched-row.next .sched-title { color: var(--cyan); }
   .sched-title { color: #E4F7FF; flex: 1; }
+  .sched-actions { display: flex; gap: 2px; flex-shrink: 0; align-items: flex-start; opacity: 0.45; transition: opacity .15s; }
+  .sched-row:hover .sched-actions, .sched-row:focus-within .sched-actions { opacity: 1; }
+  .sched-act { background: transparent; border: 0; color: rgba(63,224,255,0.85); cursor: pointer; font-size: 0.82rem; line-height: 1; padding: 3px 5px; border-radius: 4px; font-family: inherit; }
+  .sched-act:hover { background: rgba(63,224,255,0.12); }
+  .sched-act.del { color: #ff7a8a; }
+  .sched-act.del:hover { background: rgba(255,122,138,0.14); }
+  .sched-confirm { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; font-size: 0.72rem; color: #ffb3bd; font-weight: 600; }
+  .sched-confirm button { border: 1px solid rgba(255,122,138,0.55); background: rgba(255,122,138,0.1); color: #ffb3bd; border-radius: 5px; padding: 3px 8px; font-size: 0.7rem; cursor: pointer; font-family: inherit; }
+  .sched-confirm button.ghost { border-color: rgba(63,224,255,0.3); background: transparent; color: rgba(63,224,255,0.85); }
+  .sched-edit { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+  .sched-edit input { width: 100%; box-sizing: border-box; background: rgba(8,18,28,0.9); border: 1px solid rgba(63,224,255,0.3); border-radius: 5px; color: #E4F7FF; padding: 4px 6px; font-size: 0.76rem; font-family: inherit; color-scheme: dark; }
+  .sched-edit label { font-size: 0.62rem; color: #4A6472; font-family: 'Share Tech Mono', monospace; display: flex; flex-direction: column; gap: 2px; }
+  .sched-edit .btns { display: flex; gap: 6px; }
+  .sched-edit .err { color: #ff7a8a; font-size: 0.68rem; }
   .sched-list.expanded { max-height: 300px; overflow-y: auto; padding-right: 4px; }
   .sched-list.expanded::-webkit-scrollbar { width: 4px; }
   .sched-list.expanded::-webkit-scrollbar-thumb { background: rgba(63,224,255,0.25); border-radius: 2px; }
@@ -2155,6 +2169,63 @@
   // 서버는 각 일정을 개별로만 알고 있으므로(hasConflict는 add 시점에만 계산),
   // 화면에 표시할 전체 목록 기준 겹침은 여기서 다시 한 번 계산한다.
   let schedExpanded = false;
+  let schedEditId = null;      // 수정 중인 일정 id
+  let schedConfirmId = null;   // 삭제 확인 중인 일정 id
+  let schedEditError = '';
+
+  async function schedRequest(method, url, body) {
+    const res = await fetch(url, {
+      method,
+      headers: Object.assign({ 'X-XSRF-TOKEN': getCsrfToken() }, body ? { 'Content-Type': 'application/json' } : {}),
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* 본문 없음 */ }
+    if (!res.ok) throw new Error((data && data.error) || ('HTTP ' + res.status));
+    return data;
+  }
+
+  async function deleteSchedule(id) {
+    try {
+      await schedRequest('DELETE', '/api/schedules/' + id);
+      schedConfirmId = null;
+      upsertToast('schedule', 'success', 'SCHEDULE DELETED', '일정을 삭제했습니다');
+    } catch (err) {
+      upsertToast('schedule', 'error', 'SCHEDULE DELETE FAILED', '삭제 실패: ' + err.message);
+    }
+    refreshSchedules();
+  }
+
+  async function deleteScheduleSeries(title) {
+    try {
+      const r = await schedRequest('DELETE', '/api/schedules?title=' + encodeURIComponent(title));
+      schedConfirmId = null;
+      upsertToast('schedule', 'success', 'SCHEDULE DELETED', "'" + title + "' " + r.deleted + '건을 삭제했습니다');
+    } catch (err) {
+      upsertToast('schedule', 'error', 'SCHEDULE DELETE FAILED', '삭제 실패: ' + err.message);
+    }
+    refreshSchedules();
+  }
+
+  async function saveScheduleEdit(id, title, start, end) {
+    schedEditError = '';
+    if (!title.trim()) { schedEditError = '제목을 입력하세요.'; renderSchedules(lastSchedules); return; }
+    if (!start) { schedEditError = '시작 시각을 입력하세요.'; renderSchedules(lastSchedules); return; }
+    try {
+      await schedRequest('PUT', '/api/schedules/' + id, {
+        title: title.trim(), startTime: start.length === 16 ? start + ':00' : start,
+        endTime: end ? (end.length === 16 ? end + ':00' : end) : null,
+      });
+      schedEditId = null;
+      upsertToast('schedule', 'success', 'SCHEDULE UPDATED', '일정을 수정했습니다');
+    } catch (err) {
+      schedEditError = err.message;
+      renderSchedules(lastSchedules);
+      return;
+    }
+    refreshSchedules();
+  }
+
   const SCHEDULE_COLLAPSED_ROWS = 3;
 
   function scheduleDayLabel(d, now) {
@@ -2199,7 +2270,56 @@
     }
     const nextIdx = sorted.findIndex((s) => new Date(s.startTime) >= now);
 
+    const titleCount = {};
+    schedules.forEach((x) => { titleCount[x.title] = (titleCount[x.title] || 0) + 1; });
+
+    function makeEditRow(s) {
+      const row = document.createElement('div');
+      row.className = 'sched-row';
+      const form = document.createElement('div');
+      form.className = 'sched-edit';
+      const mk = (labelText, type, value) => {
+        const l = document.createElement('label');
+        l.textContent = labelText;
+        const i = document.createElement('input');
+        i.type = type; i.value = value || '';
+        l.appendChild(i);
+        form.appendChild(l);
+        return i;
+      };
+      const iTitle = mk('TITLE', 'text', s.title); iTitle.maxLength = 100;
+      const iStart = mk('START', 'datetime-local', (s.startTime || '').slice(0, 16));
+      const iEnd = mk('END (선택)', 'datetime-local', (s.endTime || '').slice(0, 16));
+      if (schedEditError) {
+        const e = document.createElement('div'); e.className = 'err'; e.textContent = schedEditError; form.appendChild(e);
+      }
+      const btns = document.createElement('div'); btns.className = 'btns';
+      const save = document.createElement('button'); save.type = 'button'; save.className = 'sched-toggle'; save.style.marginTop = '0'; save.textContent = '저장';
+      save.addEventListener('click', () => {
+        let endVal = iEnd.value;
+        const origStart = (s.startTime || '').slice(0, 16), origEnd = (s.endTime || '').slice(0, 16);
+        if (iStart.value && endVal) {
+          const st = new Date(iStart.value), en = new Date(endVal);
+          if (endVal === origEnd && iStart.value !== origStart && origStart) {
+            // 시작만 옮겼으면 원래 길이를 유지한다
+            const len = new Date(origEnd) - new Date(origStart);
+            const moved = new Date(st.getTime() + (len > 0 ? len : 3600000));
+            endVal = moved.getFullYear() + '-' + pad(moved.getMonth() + 1) + '-' + pad(moved.getDate()) + 'T' + pad(moved.getHours()) + ':' + pad(moved.getMinutes());
+          } else if (en <= st) {
+            endVal = ''; // 종료가 시작보다 이르면 비워서 서버가 시작+1시간으로 정한다
+          }
+        }
+        saveScheduleEdit(s.id, iTitle.value, iStart.value, endVal);
+      });
+      const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'sched-toggle'; cancel.style.marginTop = '0'; cancel.textContent = '취소';
+      cancel.addEventListener('click', () => { schedEditId = null; schedEditError = ''; renderSchedules(lastSchedules); });
+      btns.appendChild(save); btns.appendChild(cancel); form.appendChild(btns);
+      row.appendChild(form);
+      return row;
+    }
+
     function makeRow(s, idx, withWhen) {
+      if (schedEditId === s.id) return makeEditRow(s);
       const start = new Date(s.startTime);
       const row = document.createElement('div');
       row.className = 'sched-row' + (idx === nextIdx ? ' next' : '');
@@ -2224,8 +2344,26 @@
         note.textContent = 'CONFLICT';
         box.appendChild(note);
       }
+      if (schedConfirmId === s.id) {
+        const c = document.createElement('div');
+        c.className = 'sched-confirm';
+        const q = document.createElement('span'); q.textContent = '삭제할까요?'; c.appendChild(q);
+        const mkBtn = (text, cls, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = text; if (cls) b.className = cls; b.addEventListener('click', fn); c.appendChild(b); };
+        mkBtn('이 일정만', '', () => deleteSchedule(s.id));
+        if (titleCount[s.title] > 1) mkBtn("'" + s.title + "' " + titleCount[s.title] + '건 모두', '', () => deleteScheduleSeries(s.title));
+        mkBtn('취소', 'ghost', () => { schedConfirmId = null; renderSchedules(lastSchedules); });
+        box.appendChild(c);
+      }
+      const acts = document.createElement('div');
+      acts.className = 'sched-actions';
+      const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'sched-act'; edit.title = '수정'; edit.setAttribute('aria-label', '일정 수정'); edit.textContent = '✎';
+      edit.addEventListener('click', () => { schedEditId = s.id; schedConfirmId = null; schedEditError = ''; renderSchedules(lastSchedules); });
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'sched-act del'; del.title = '삭제'; del.setAttribute('aria-label', '일정 삭제'); del.textContent = '✕';
+      del.addEventListener('click', () => { schedConfirmId = s.id; schedEditId = null; renderSchedules(lastSchedules); });
+      acts.appendChild(edit); acts.appendChild(del);
       row.appendChild(time);
       row.appendChild(box);
+      row.appendChild(acts);
       return row;
     }
 

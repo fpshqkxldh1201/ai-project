@@ -16,15 +16,51 @@ function dayLabel(d, now) {
 const REMINDER_ROWS = 4 // 패널에 보여줄 개수(나머지는 '외 N건')
 
 export default function RightPanel() {
-  const { schedules, reminders, notes, addNote, deleteNote, clearNotes } = useLumi()
+  const { schedules, reminders, notes, addNote, deleteNote, clearNotes, updateSchedule, deleteSchedule, deleteScheduleSeries } = useLumi()
   const [noteText, setNoteText] = useState('')
   // 남은 시간 표시가 가만히 있어도 줄어들도록 30초마다 현재 시각을 갱신
   const [now, setNow] = useState(() => new Date())
   const [schedOpen, setSchedOpen] = useState(false)
+  const [editId, setEditId] = useState(null)       // 수정 중인 일정 id
+  const [confirmId, setConfirmId] = useState(null) // 삭제 확인 중인 일정 id
+  const [editForm, setEditForm] = useState({ title: '', start: '', end: '' })
+  const [editError, setEditError] = useState('')
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30000)
     return () => clearInterval(id)
   }, [])
+
+  const toLocalInput = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes())
+
+  function startEdit(s) {
+    setEditId(s.id)
+    setConfirmId(null)
+    setEditError('')
+    setEditForm({ title: s.title, start: (s.startTime || '').slice(0, 16), end: (s.endTime || '').slice(0, 16), origStart: (s.startTime || '').slice(0, 16), origEnd: (s.endTime || '').slice(0, 16) })
+  }
+
+  async function saveEdit() {
+    const { title, start, origStart, origEnd } = editForm
+    let end = editForm.end
+    if (!title.trim()) return setEditError('제목을 입력하세요.')
+    if (!start) return setEditError('시작 시각을 입력하세요.')
+    if (end) {
+      const st = new Date(start)
+      if (end === origEnd && start !== origStart && origStart) {
+        const len = new Date(origEnd) - new Date(origStart) // 시작만 옮겼으면 원래 길이를 유지
+        end = toLocalInput(new Date(st.getTime() + (len > 0 ? len : 3600000)))
+      } else if (new Date(end) <= st) {
+        end = '' // 서버가 시작+1시간으로 정한다
+      }
+    }
+    const err = await updateSchedule(editId, {
+      title: title.trim(),
+      startTime: start.length === 16 ? start + ':00' : start,
+      endTime: end ? (end.length === 16 ? end + ':00' : end) : null,
+    })
+    if (err) setEditError(err)
+    else setEditId(null)
+  }
 
   async function submitNote() {
     if (await addNote(noteText)) setNoteText('')
@@ -90,19 +126,49 @@ export default function RightPanel() {
           {(schedOpen ? rows : rows.slice(0, SCHEDULE_COLLAPSED_ROWS)).map((s, i, arr) => {
             const showDay = schedOpen && (i === 0 || dayKeyOf(arr[i - 1]._start) !== dayKeyOf(s._start))
             const showWhen = !schedOpen && dayKeyOf(s._start) !== dayKeyOf(now)
+            const sameTitle = rows.filter((x) => x.title === s.title).length
             return (
               <Fragment key={s.id ?? s.title + s.startTime}>
                 {showDay && (
                   <div className={'sched-day' + (dayKeyOf(s._start) === dayKeyOf(now) ? ' today' : '')}>{dayLabel(s._start, now)}</div>
                 )}
-                <div className={'sched-row' + (s.isNext ? ' next' : '')}>
-                  <span className="sched-time">{pad(s._start.getHours())}:{pad(s._start.getMinutes())}</span>
-                  <div style={{ flex: 1 }}>
-                    <div className="sched-title">{s.title}</div>
-                    {showWhen && <div className="sched-when">{dayLabel(s._start, now)}</div>}
-                    {s.hasConflict && <div className="sched-note">CONFLICT</div>}
+                {editId === s.id ? (
+                  <div className="sched-row">
+                    <div className="sched-edit">
+                      <label>TITLE<input type="text" maxLength={100} value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} /></label>
+                      <label>START<input type="datetime-local" value={editForm.start} onChange={(e) => setEditForm({ ...editForm, start: e.target.value })} /></label>
+                      <label>END (선택)<input type="datetime-local" value={editForm.end} onChange={(e) => setEditForm({ ...editForm, end: e.target.value })} /></label>
+                      {editError && <div className="err">{editError}</div>}
+                      <div className="btns">
+                        <button type="button" className="sched-toggle" style={{ marginTop: 0 }} onClick={saveEdit}>저장</button>
+                        <button type="button" className="sched-toggle" style={{ marginTop: 0 }} onClick={() => { setEditId(null); setEditError('') }}>취소</button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className={'sched-row' + (s.isNext ? ' next' : '')}>
+                    <span className="sched-time">{pad(s._start.getHours())}:{pad(s._start.getMinutes())}</span>
+                    <div style={{ flex: 1 }}>
+                      <div className="sched-title">{s.title}</div>
+                      {showWhen && <div className="sched-when">{dayLabel(s._start, now)}</div>}
+                      {s.hasConflict && <div className="sched-note">CONFLICT</div>}
+                      {confirmId === s.id && (
+                        <div className="sched-confirm">
+                          <span>삭제할까요?</span>
+                          <button type="button" onClick={() => { setConfirmId(null); deleteSchedule(s.id) }}>이 일정만</button>
+                          {sameTitle > 1 && (
+                            <button type="button" onClick={() => { setConfirmId(null); deleteScheduleSeries(s.title) }}>'{s.title}' {sameTitle}건 모두</button>
+                          )}
+                          <button type="button" className="ghost" onClick={() => setConfirmId(null)}>취소</button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="sched-actions">
+                      <button type="button" className="sched-act" title="수정" aria-label="일정 수정" onClick={() => startEdit(s)}>✎</button>
+                      <button type="button" className="sched-act del" title="삭제" aria-label="일정 삭제" onClick={() => { setConfirmId(s.id); setEditId(null) }}>✕</button>
+                    </div>
+                  </div>
+                )}
               </Fragment>
             )
           })}

@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -123,6 +124,10 @@ public class GeminiService {
               repeatWeeks에 반복할 주 수(첫 주 포함)를 넣습니다. 학기 수업처럼 기간을 말하지 않았으면 16주로
               하고, 등록한 뒤 "앞으로 16주 동안 등록했어요"처럼 기간을 알려줍니다. startTime은 오늘 이후
               가장 가까운 해당 요일의 날짜로 계산합니다(이미 지난 날짜로 넣지 않습니다).
+            - 일정 수정·삭제는 get_schedules로 id를 확인한 뒤 update_schedule, delete_schedule을 사용합니다.
+              사용자가 바꾸거나 지워 달라고 직접 말했을 때만 호출하고, 어느 일정인지 애매하면 짧게 되묻습니다.
+              여러 개를 지울 때는 "삭제했어요"라고 말하기 전에 응답의 deleted 개수를 확인해 그대로 알려줍니다.
+              같은 제목의 반복 일정을 모두 지우라고 한 경우에만 deleteAllUpcoming=true를 씁니다.
             - 리마인더 등록/조회는 반드시 get_reminders, add_reminder 함수를 사용하고,
               일정(약속·회의)과 리마인더(짧은 할 일 알림)를 혼동하지 않습니다.
             - 최신 뉴스, 가격, 사실 확인 등 학습 데이터만으로 확신할 수 없는 정보는
@@ -207,6 +212,35 @@ public class GeminiService {
                                             "description", "매주 같은 요일·시각에 반복할 총 주 수(첫 주 포함, 선택). 반복 일정일 때만 넣고 최대 20. 없으면 1회만 등록")
                             ),
                             "required", List.of("title", "startTime")
+                    )
+            ),
+            new GeminiFunctionDeclaration(
+                    "update_schedule",
+                    "이미 등록된 일정 하나의 제목·시각·메모를 수정합니다. 먼저 get_schedules로 id를 확인한 뒤, " +
+                            "사용자가 일정을 바꾸거나 옮겨 달라고 직접 말했을 때만 사용하세요. 바꾸지 않을 항목은 생략합니다.",
+                    Map.of(
+                            "type", "OBJECT",
+                            "properties", Map.of(
+                                    "id", Map.of("type", "INTEGER", "description", "수정할 일정 id (get_schedules 결과의 id)"),
+                                    "title", Map.of("type", "STRING", "description", "새 제목 (선택)"),
+                                    "startTime", Map.of("type", "STRING", "description", "새 시작 시각, ISO-8601 (선택)"),
+                                    "endTime", Map.of("type", "STRING", "description", "새 종료 시각, ISO-8601 (선택 — 시작만 바꾸면 기존 길이를 유지)"),
+                                    "memo", Map.of("type", "STRING", "description", "새 메모 (선택)")
+                            ),
+                            "required", List.of("id")
+                    )
+            ),
+            new GeminiFunctionDeclaration(
+                    "delete_schedule",
+                    "일정을 삭제합니다. 사용자가 일정을 지우거나 취소해 달라고 직접 말했을 때만 사용하세요. " +
+                            "일정 하나는 id로, 같은 제목의 앞으로 남은 일정(예: 반복 등록한 수업)을 한꺼번에 지우려면 title과 deleteAllUpcoming=true로 호출합니다.",
+                    Map.of(
+                            "type", "OBJECT",
+                            "properties", Map.of(
+                                    "id", Map.of("type", "INTEGER", "description", "삭제할 일정 id (선택)"),
+                                    "title", Map.of("type", "STRING", "description", "같은 제목 일정을 모두 지울 때의 제목 (선택)"),
+                                    "deleteAllUpcoming", Map.of("type", "BOOLEAN", "description", "true면 title이 같은 앞으로의 일정을 모두 삭제 (선택)")
+                            )
                     )
             ),
             new GeminiFunctionDeclaration(
@@ -584,8 +618,7 @@ public class GeminiService {
             } catch (RuntimeException geminiError) {
                 // 한도 초과(429)·과부하(503)·서버 오류·시간 초과면 예비 모델(OpenAI/Grok)이 같은 대화를 이어서 답한다.
                 String backupReply = replyViaFallbackModel(geminiError, contents, links, evidence,
-                        new NoteIntent(!isGreetingTrigger && KnowledgeNoteService.hasSaveIntent(message),
-                                !isGreetingTrigger && KnowledgeNoteService.hasDeleteIntent(message)));
+                        NoteIntent.of(message, isGreetingTrigger));
                 if (backupReply == null) {
                     throw geminiError;
                 }
@@ -626,8 +659,7 @@ public class GeminiService {
                 return new ChatResult(guardReply(reply), resolveEmotion(emotionFuture), distinctLinks(links), joinEvidence(evidence), toneLabel);
             }
 
-            NoteIntent noteIntent = new NoteIntent(!isGreetingTrigger && KnowledgeNoteService.hasSaveIntent(message),
-                    !isGreetingTrigger && KnowledgeNoteService.hasDeleteIntent(message));
+            NoteIntent noteIntent = NoteIntent.of(message, isGreetingTrigger);
             List<GeminiPart> responseParts = new ArrayList<>();
             for (int i = 0; i < functionCalls.size(); i++) {
                 GeminiFunctionCall call = functionCalls.get(i);
@@ -971,7 +1003,17 @@ public class GeminiService {
     }
 
     /** 사용자의 "이번 발화"에 기억/삭제 의도가 있었는지 — 외부 글에 속은 모델이 노트를 마음대로 바꾸지 못하게 하는 확인용. */
-    private record NoteIntent(boolean save, boolean delete) {
+    private record NoteIntent(boolean save, boolean delete, boolean scheduleEdit, boolean scheduleDelete) {
+        NoteIntent(boolean save, boolean delete) {
+            this(save, delete, false, false);
+        }
+
+        static NoteIntent of(String message, boolean greetingTrigger) {
+            return new NoteIntent(!greetingTrigger && KnowledgeNoteService.hasSaveIntent(message),
+                    !greetingTrigger && KnowledgeNoteService.hasDeleteIntent(message),
+                    !greetingTrigger && ScheduleService.hasEditIntent(message),
+                    !greetingTrigger && ScheduleService.hasDeleteIntent(message));
+        }
     }
 
     private GeminiFunctionResponse executeFunctionCall(GeminiFunctionCall call, List<ChatLink> links,
@@ -980,6 +1022,8 @@ public class GeminiService {
         Map<String, Object> result = switch (call.name()) {
             case "get_schedules" -> handleGetSchedules();
             case "add_schedule" -> handleAddSchedule(args);
+            case "update_schedule" -> handleUpdateSchedule(args, noteIntent);
+            case "delete_schedule" -> handleDeleteSchedule(args, noteIntent);
             case "get_reminders" -> handleGetReminders();
             case "add_reminder" -> handleAddReminder(args);
             case "save_note" -> handleSaveNote(args, noteIntent);
@@ -1012,6 +1056,87 @@ public class GeminiService {
                 })
                 .toList();
         return Map.of("schedules", list);
+    }
+
+    private Map<String, Object> handleUpdateSchedule(Map<String, Object> args, NoteIntent intent) {
+        if (!intent.scheduleEdit()) {
+            log.warn("[보안] 사용자 요청 없이 update_schedule 호출 시도를 거절");
+            return Map.of("error", "사용자가 일정을 바꾸거나 옮겨 달라고 직접 말했을 때만 수정할 수 있습니다.");
+        }
+        if (!(args.get("id") instanceof Number n)) {
+            return Map.of("error", "수정할 일정 id가 필요합니다. get_schedules로 먼저 확인하세요.");
+        }
+        Optional<Schedule> found = scheduleService.find(n.longValue());
+        if (found.isEmpty()) {
+            return Map.of("updated", false, "error", "해당 일정을 찾지 못했습니다. get_schedules로 id를 다시 확인하세요.");
+        }
+        Schedule old = found.get();
+        String title = args.get("title") == null ? old.getTitle()
+                : inputSanitizer.cleanForStorage(inputSanitizer.asString(args.get("title")), 100);
+        if (title == null || title.isBlank()) {
+            return Map.of("error", "제목이 비어 있습니다.");
+        }
+        LocalDateTime start = old.getStartTime();
+        if (args.get("startTime") != null) {
+            start = parseDateTime(inputSanitizer.asString(args.get("startTime")));
+            if (start == null) {
+                return Map.of("error", "startTime은 ISO-8601 형식이어야 합니다.");
+            }
+        }
+        LocalDateTime end;
+        if (args.get("endTime") != null) {
+            end = parseDateTime(inputSanitizer.asString(args.get("endTime")));
+            if (end == null) {
+                return Map.of("error", "endTime은 ISO-8601 형식이어야 합니다.");
+            }
+        } else if (old.getEndTime() != null) {
+            end = start.plus(java.time.Duration.between(old.getStartTime(), old.getEndTime())); // 시작만 옮기면 기존 길이 유지
+        } else {
+            end = null;
+        }
+        if (end != null && !end.isAfter(start)) {
+            return Map.of("error", "종료 시각은 시작 시각보다 뒤여야 합니다.");
+        }
+        String memo = args.get("memo") == null ? old.getMemo()
+                : inputSanitizer.cleanForStorage(inputSanitizer.asString(args.get("memo")), 255);
+        if (memo != null && memo.isBlank()) {
+            memo = null;
+        }
+        Optional<ScheduleService.ScheduleAddResult> r = scheduleService.update(old.getId(), title, start, end, memo);
+        if (r.isEmpty()) {
+            return Map.of("updated", false, "error", "해당 일정을 찾지 못했습니다.");
+        }
+        Schedule s = r.get().saved();
+        Map<String, Object> out = new HashMap<>();
+        out.put("updated", true);
+        out.put("id", s.getId());
+        out.put("title", s.getTitle());
+        out.put("startTime", s.getStartTime().toString());
+        out.put("endTime", s.getEndTime() != null ? s.getEndTime().toString() : "");
+        out.put("hasConflict", !r.get().overlapping().isEmpty());
+        return out;
+    }
+
+    private Map<String, Object> handleDeleteSchedule(Map<String, Object> args, NoteIntent intent) {
+        if (!intent.scheduleDelete()) {
+            log.warn("[보안] 사용자 요청 없이 delete_schedule 호출 시도를 거절");
+            return Map.of("error", "사용자가 일정을 지우거나 취소해 달라고 직접 말했을 때만 삭제할 수 있습니다.");
+        }
+        if (Boolean.TRUE.equals(args.get("deleteAllUpcoming"))) {
+            String title = inputSanitizer.cleanForStorage(inputSanitizer.asString(args.get("title")), 100);
+            if (title == null || title.isBlank()) {
+                return Map.of("error", "같은 제목 일정을 모두 지우려면 title이 필요합니다.");
+            }
+            int count = scheduleService.deleteUpcomingByTitle(title);
+            return Map.of("deleted", count, "title", title,
+                    "message", count == 0 ? "그 제목의 앞으로 남은 일정이 없습니다." : "앞으로 남은 '" + title + "' 일정 " + count + "건을 삭제했습니다.");
+        }
+        if (!(args.get("id") instanceof Number n)) {
+            return Map.of("error", "삭제할 일정 id가 필요합니다. get_schedules로 먼저 확인하세요.");
+        }
+        return scheduleService.delete(n.longValue())
+                ? Map.of("deleted", 1)
+                : Map.of("deleted", 0, "error", "해당 일정을 찾지 못했습니다.");
     }
 
     private Map<String, Object> handleAddSchedule(Map<String, Object> args) {

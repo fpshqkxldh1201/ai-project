@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Service
 public class ScheduleService {
@@ -39,6 +41,59 @@ public class ScheduleService {
         List<Schedule> overlapping = repository.findOverlapping(owner, startTime, actualEnd);
         Schedule saved = repository.save(new Schedule(owner, title, startTime, actualEnd, memo));
         return new ScheduleAddResult(saved, overlapping);
+    }
+
+    private static final Pattern DELETE_INTENT = Pattern.compile("삭제|지워|지우|없애|취소|빼\\s*줘|빼줘|제거");
+    private static final Pattern EDIT_INTENT = Pattern.compile("수정|변경|바꿔|바꾸|옮겨|옮기|미뤄|미루|당겨|앞당|늦춰|고쳐|조정");
+
+    /** 사용자의 이번 발화에 일정을 지우려는 말이 있었는가 — 외부 글에 속은 모델이 마음대로 지우지 못하게 하는 확인용. */
+    public static boolean hasDeleteIntent(String userMessage) {
+        return userMessage != null && DELETE_INTENT.matcher(userMessage).find();
+    }
+
+    /** 사용자의 이번 발화에 일정을 고치려는 말이 있었는가. */
+    public static boolean hasEditIntent(String userMessage) {
+        return userMessage != null && (EDIT_INTENT.matcher(userMessage).find());
+    }
+
+    /** 본인 일정 하나를 찾는다(남의 것이면 empty). */
+    public Optional<Schedule> find(long id) {
+        return repository.findByIdAndOwner(id, currentUserProvider.requireCurrentUser());
+    }
+
+    /** 본인 일정 하나를 고친다. 없거나 남의 것이면 empty. endTime이 없으면 시작+1시간. 겹치는 다른 일정도 함께 돌려준다. */
+    public Optional<ScheduleAddResult> update(long id, String title, LocalDateTime startTime, LocalDateTime endTime, String memo) {
+        User owner = currentUserProvider.requireCurrentUser();
+        Optional<Schedule> found = repository.findByIdAndOwner(id, owner);
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        Schedule s = found.get();
+        LocalDateTime actualEnd = (endTime != null) ? endTime : startTime.plusHours(1);
+        s.update(title, startTime, actualEnd, memo);
+        Schedule saved = repository.save(s);
+        List<Schedule> overlapping = repository.findOverlapping(owner, startTime, actualEnd).stream()
+                .filter(o -> !o.getId().equals(saved.getId())).toList();
+        return Optional.of(new ScheduleAddResult(saved, overlapping));
+    }
+
+    /** 본인 일정 하나를 지운다. 없거나 남의 것이면 false. */
+    public boolean delete(long id) {
+        User owner = currentUserProvider.requireCurrentUser();
+        Optional<Schedule> found = repository.findByIdAndOwner(id, owner);
+        if (found.isEmpty()) {
+            return false;
+        }
+        repository.delete(found.get());
+        return true;
+    }
+
+    /** 지금 이후의 본인 일정 중 제목이 같은 것을 모두 지운다(반복 일정 한 번에 지우기). 지운 개수를 돌려준다. */
+    public int deleteUpcomingByTitle(String title) {
+        User owner = currentUserProvider.requireCurrentUser();
+        List<Schedule> targets = repository.findByOwnerAndTitleAndStartTimeAfter(owner, title, LocalDateTime.now().minusMinutes(1));
+        repository.deleteAll(targets);
+        return targets.size();
     }
 
     public record ScheduleAddResult(Schedule saved, List<Schedule> overlapping) {
