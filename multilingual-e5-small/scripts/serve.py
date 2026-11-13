@@ -43,11 +43,13 @@ for _p in (_IC / "scripts", Path(__file__).resolve().parent):
         sys.path.append(str(_p))
 from speaker_intent_labels import LABELS as INTENT_LABELS
 from speaker_intent_labels import model_text as intent_text
+from speaker_subtext_labels import LABELS as SUBTEXT_LABELS
 
 ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = Path(os.environ.get("EMOTION_MODEL_DIR", ROOT / "models" / "emotion"))
 IMAGE_MODEL = os.environ.get("EMOTION_IMAGE_MODEL", "").strip()
 SPEAKER_DIR = Path(os.environ.get("SPEAKER_INTENT_MODEL_DIR", _IC / "models" / "speaker_intent"))
+SUBTEXT_DIR = Path(os.environ.get("SPEAKER_SUBTEXT_MODEL_DIR", _IC / "models" / "speaker_subtext"))
 MAX_TEXT_CHARS = 2000
 MAX_SPEAKER_ITEMS = 12
 MAX_SPEAKER_CHARS = 500
@@ -103,6 +105,24 @@ def load_speaker_intent() -> None:
         log.warning("상대 발화 의도 분류기를 불러오지 못해 끕니다: %s", e)
 
 
+def load_speaker_subtext() -> None:
+    """상대 말 속뜻 분류기(head.json). 없거나 라벨이 다르면 속뜻만 끄고(겉뜻 분류는 계속) 서버는 그대로 뜬다."""
+    path = SUBTEXT_DIR / "head.json"
+    state["subtext"] = None
+    if not path.exists():
+        log.info("상대 말 속뜻 분류기 꺼짐 (%s 없음 — multilingual-e5-small에서 python scripts/train_speaker_subtext.py)", path)
+        return
+    try:
+        d = json.loads(path.read_text(encoding="utf-8"))
+        if d.get("labels") != SUBTEXT_LABELS:
+            raise ValueError("저장된 속뜻 라벨이 현재 speaker_subtext_labels.py와 다릅니다. 다시 학습하세요")
+        state["subtext"] = {"W": np.asarray(d["coef"], dtype="float64"), "b": np.asarray(d["intercept"], dtype="float64"),
+                            "tau": float(d["tau"]), "mode": d.get("relation_mode", "prefix"), "version": d["model_version"]}
+        log.info("상대 말 속뜻 분류기 켜짐: %s (애매함 기준 %.2f)", d["model_version"], state["subtext"]["tau"])
+    except Exception as e:
+        log.warning("상대 말 속뜻 분류기를 불러오지 못해 끕니다: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -114,6 +134,7 @@ async def lifespan(_app: FastAPI):
     log.info("감정 모델 로드: %s (%s)", meta["model_version"], MODEL_DIR)
     log.info("명령 게이트 %s", f"켜짐 (기준 {gate.threshold})" if gate else "없음 — 명령 문장도 감정으로 읽힐 수 있습니다(train.py로 다시 학습하면 생깁니다)")
     load_speaker_intent()
+    load_speaker_subtext()
     if IMAGE_MODEL:
         try:
             from transformers import pipeline
@@ -139,7 +160,8 @@ class AnalyzeRequest(BaseModel):
 @app.get("/health")
 def health():
     return {"status": "ok", "model_version": state["meta"]["model_version"], "image_enabled": state.get("pipe") is not None,
-            "gate_enabled": state.get("gate") is not None, "speaker_intent_enabled": state.get("speaker") is not None}
+            "gate_enabled": state.get("gate") is not None, "speaker_intent_enabled": state.get("speaker") is not None,
+            "speaker_subtext_enabled": state.get("subtext") is not None}
 
 
 class SpeakerItem(BaseModel):
@@ -161,19 +183,35 @@ def speaker_intent(req: SpeakerRequest):
     texts = [intent_text(it.relation, it.text, sp["mode"]) for it in req.items]
     if any(not it.text.strip() for it in req.items):
         raise HTTPException(status_code=422, detail="text가 비어 있습니다")
+    st = state.get("subtext")
+    sub_texts = [intent_text(it.relation, it.text, st["mode"]) for it in req.items] if st is not None else None
     with lock, torch.no_grad():
         emb = state["model"].encoder.embed(texts).float().cpu().numpy().astype("float64")
+        sub_emb = emb if sub_texts == texts else (
+            state["model"].encoder.embed(sub_texts).float().cpu().numpy().astype("float64") if sub_texts else None)
     z = (emb @ sp["W"].T + sp["b"]) / sp["T"]
     z -= z.max(1, keepdims=True)
     P = np.exp(z)
     P /= P.sum(1, keepdims=True)
+    S = None
+    if st is not None and sub_emb is not None:
+        zs = sub_emb @ st["W"].T + st["b"]
+        zs -= zs.max(1, keepdims=True)
+        S = np.exp(zs)
+        S /= S.sum(1, keepdims=True)
     results = []
-    for row in P:
+    for i, row in enumerate(P):
         order = np.argsort(-row)
-        results.append({"label": INTENT_LABELS[int(order[0])], "confidence": round(float(row[order[0]]), 4),
-                        "uncertain": bool(row[order[0]] < sp["tau"]),
-                        "top": [{"label": INTENT_LABELS[int(j)], "p": round(float(row[j]), 4)} for j in order[:3]]})
-    log.info("speaker-intent items=%d %.0fms", len(texts), (time.time() - t0) * 1000)
+        r = {"label": INTENT_LABELS[int(order[0])], "confidence": round(float(row[order[0]]), 4),
+             "uncertain": bool(row[order[0]] < sp["tau"]),
+             "top": [{"label": INTENT_LABELS[int(j)], "p": round(float(row[j]), 4)} for j in order[:3]]}
+        if S is not None:
+            so = np.argsort(-S[i])
+            r["subtext"] = {"label": SUBTEXT_LABELS[int(so[0])], "confidence": round(float(S[i][so[0]]), 4),
+                            "uncertain": bool(S[i][so[0]] < st["tau"]),
+                            "top": [{"label": SUBTEXT_LABELS[int(j)], "p": round(float(S[i][j]), 4)} for j in so[:3]]}
+        results.append(r)
+    log.info("speaker-intent items=%d subtext=%s %.0fms", len(texts), S is not None, (time.time() - t0) * 1000)
     return {"model_version": sp["version"], "tau": sp["tau"], "results": results}
 
 
