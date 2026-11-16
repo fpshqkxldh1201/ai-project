@@ -16,7 +16,7 @@ function dayLabel(d, now) {
 const REMINDER_ROWS = 4 // 패널에 보여줄 개수(나머지는 '외 N건')
 
 export default function RightPanel() {
-  const { schedules, reminders, notes, addNote, deleteNote, clearNotes, updateSchedule, deleteSchedule, deleteScheduleSeries } = useLumi()
+  const { schedules, reminders, notes, addNote, deleteNote, clearNotes, updateNote, updateReminder, completeReminder, deleteReminder, updateSchedule, deleteSchedule, deleteScheduleSeries } = useLumi()
   const [noteText, setNoteText] = useState('')
   // 남은 시간 표시가 가만히 있어도 줄어들도록 30초마다 현재 시각을 갱신
   const [now, setNow] = useState(() => new Date())
@@ -25,6 +25,14 @@ export default function RightPanel() {
   const [confirmId, setConfirmId] = useState(null) // 삭제 확인 중인 일정 id
   const [editForm, setEditForm] = useState({ title: '', start: '', end: '' })
   const [editError, setEditError] = useState('')
+  // 리마인더(펼침·수정·삭제 확인)와 노트 수정 상태
+  const [remOpen, setRemOpen] = useState(false)
+  const [remEditId, setRemEditId] = useState(null)
+  const [remConfirmId, setRemConfirmId] = useState(null)
+  const [remForm, setRemForm] = useState({ content: '', at: '' })
+  const [remError, setRemError] = useState('')
+  const [noteEditId, setNoteEditId] = useState(null)
+  const [noteEditText, setNoteEditText] = useState('')
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30000)
     return () => clearInterval(id)
@@ -62,6 +70,25 @@ export default function RightPanel() {
     else setEditId(null)
   }
 
+  async function saveRemEdit() {
+    if (!remForm.content.trim()) return setRemError('내용을 입력하세요.')
+    if (!remForm.at) return setRemError('알림 시각을 입력하세요.')
+    const err = await updateReminder(remEditId, {
+      content: remForm.content.trim(),
+      remindAt: remForm.at.length === 16 ? remForm.at + ':00' : remForm.at,
+    })
+    if (err) setRemError(err)
+    else setRemEditId(null)
+  }
+
+  async function saveNoteEdit() {
+    const content = noteEditText.trim()
+    if (!content) return
+    const err = await updateNote(noteEditId, content)
+    if (err) window.alert(err)
+    else setNoteEditId(null)
+  }
+
   async function submitNote() {
     if (await addNote(noteText)) setNoteText('')
   }
@@ -86,7 +113,7 @@ export default function RightPanel() {
   const weekMax = Math.max(1, ...week.map((d) => d.count))
 
   const remList = reminders || []
-  const remShown = remList.slice(0, REMINDER_ROWS)
+  const remShown = remOpen ? remList : remList.slice(0, REMINDER_ROWS)
 
   return (
     <section className="hud-panel">
@@ -191,6 +218,56 @@ export default function RightPanel() {
           <span>UPCOMING REMINDERS</span>
           <span className="tag">{reminderCount === null ? '-' : reminderCount + ' ITEMS'}</span>
         </div>
+        <div className={'rem-list' + (remOpen ? ' expanded' : '')}>
+          {reminders === null && <div className="mood-empty" style={{ marginTop: 0 }}>불러오는 중...</div>}
+          {reminders !== null && remList.length === 0 && (
+            <div className="mood-empty" style={{ marginTop: 0 }}>"내일 9시에 알려줘"라고 말하면 여기에 쌓여요</div>
+          )}
+          {remShown.map((r) => remEditId === r.id ? (
+            <div className="rem-row" key={r.id}>
+              <div className="sched-edit">
+                <label>CONTENT<input type="text" maxLength={200} value={remForm.content} onChange={(e) => setRemForm({ ...remForm, content: e.target.value })} /></label>
+                <label>REMIND AT<input type="datetime-local" value={remForm.at} onChange={(e) => setRemForm({ ...remForm, at: e.target.value })} /></label>
+                {remError && <div className="err">{remError}</div>}
+                <div className="btns">
+                  <button type="button" className="sched-toggle" style={{ marginTop: 0 }} onClick={saveRemEdit}>저장</button>
+                  <button type="button" className="sched-toggle" style={{ marginTop: 0 }} onClick={() => { setRemEditId(null); setRemError('') }}>취소</button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="rem-row" key={r.id}>
+              <span className="rem-when">{reminderWhen(new Date(r.remindAt), now)}</span>
+              <div style={{ flex: 1 }}>
+                <div className="rem-text">{r.content}</div>
+                {remConfirmId === r.id && (
+                  <div className="sched-confirm">
+                    <span>삭제할까요?</span>
+                    <button type="button" onClick={() => { setRemConfirmId(null); deleteReminder(r.id) }}>삭제</button>
+                    <button type="button" className="ghost" onClick={() => setRemConfirmId(null)}>취소</button>
+                  </div>
+                )}
+              </div>
+              <div className="sched-actions">
+                <button type="button" className="sched-act ok" title="완료" aria-label="완료" onClick={() => completeReminder(r.id)}>✔</button>
+                <button type="button" className="sched-act" title="수정" aria-label="수정" onClick={() => { setRemEditId(r.id); setRemConfirmId(null); setRemError(''); setRemForm({ content: r.content, at: (r.remindAt || '').slice(0, 16) }) }}>✎</button>
+                <button type="button" className="sched-act del" title="삭제" aria-label="삭제" onClick={() => { setRemConfirmId(r.id); setRemEditId(null) }}>✕</button>
+              </div>
+            </div>
+          ))}
+          {remList.length > REMINDER_ROWS && (
+            <button type="button" className="sched-toggle" aria-expanded={remOpen} onClick={() => setRemOpen((v) => !v)}>
+              {remOpen ? '접기 ▴' : '전체 ' + remList.length + '건 펼치기 ▾'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="chart-block">
+        <div className="panel-header" style={{ marginBottom: 10 }}>
+          <span>UPCOMING REMINDERS</span>
+          <span className="tag">{reminderCount === null ? '-' : reminderCount + ' ITEMS'}</span>
+        </div>
         <div className="rem-list">
           {reminders === null && <div className="mood-empty" style={{ marginTop: 0 }}>불러오는 중...</div>}
           {reminders !== null && remList.length === 0 && (
@@ -238,10 +315,24 @@ export default function RightPanel() {
         <div className="note-list">
           {notes.length === 0 && <div className="mood-empty" style={{ marginTop: 0 }}>"~기억해 줘"라고 말하거나 아래에 직접 추가하세요</div>}
           {notes.map((n) => (
-            <div className="note-row" key={n.id}>
-              <span className="note-text">{n.content}</span>
-              <button className="note-del" type="button" title="이 노트 삭제" onClick={() => deleteNote(n.id)}>✕</button>
-            </div>
+            noteEditId === n.id ? (
+              <div className="note-row" key={n.id}>
+                <input
+                  type="text" value={noteEditText} maxLength={200} autoFocus
+                  style={{ flex: 1, minWidth: 0, background: 'rgba(8,18,28,0.9)', border: '1px solid rgba(63,224,255,0.3)', borderRadius: 5, color: '#E4F7FF', padding: '3px 6px', fontSize: '0.76rem', fontFamily: 'inherit' }}
+                  onChange={(e) => setNoteEditText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') saveNoteEdit(); if (e.key === 'Escape') setNoteEditId(null) }}
+                />
+                <button className="note-del" type="button" style={{ color: '#6ee7a8' }} onClick={saveNoteEdit}>저장</button>
+                <button className="note-del" type="button" onClick={() => setNoteEditId(null)}>취소</button>
+              </div>
+            ) : (
+              <div className="note-row" key={n.id}>
+                <span className="note-text">{n.content}</span>
+                <button className="note-del" type="button" title="이 노트 수정" aria-label="노트 수정" onClick={() => { setNoteEditId(n.id); setNoteEditText(n.content) }}>✎</button>
+                <button className="note-del" type="button" title="이 노트 삭제" onClick={() => deleteNote(n.id)}>✕</button>
+              </div>
+            )
           ))}
         </div>
         <form className="note-add" onSubmit={(e) => { e.preventDefault(); submitNote() }}>

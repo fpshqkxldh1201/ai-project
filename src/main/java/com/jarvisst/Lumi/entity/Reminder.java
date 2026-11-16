@@ -77,6 +77,15 @@ public class Reminder {
         return createdAt;
     }
 
+    /** 내용·알림 시각을 고친다. 시각이 바뀌면 "스스로 말 걸기"가 다시 알릴 수 있게 알림 표시를 지운다. */
+    public void update(String content, LocalDateTime remindAt) {
+        if (!this.remindAt.equals(remindAt)) {
+            this.notified = false;
+        }
+        this.content = content;
+        this.remindAt = remindAt;
+    }
+
     public void markCompleted() {
         this.completed = true;
     }

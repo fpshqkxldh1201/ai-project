@@ -120,6 +120,10 @@
   .sched-row:hover .sched-actions, .sched-row:focus-within .sched-actions { opacity: 1; }
   .sched-act { background: transparent; border: 0; color: rgba(63,224,255,0.85); cursor: pointer; font-size: 0.82rem; line-height: 1; padding: 3px 5px; border-radius: 4px; font-family: inherit; }
   .sched-act:hover { background: rgba(63,224,255,0.12); }
+  .sched-act.ok { color: #6ee7a8; }
+  .sched-act.ok:hover { background: rgba(110,231,168,0.14); }
+  .rem-list.expanded { max-height: 240px; overflow-y: auto; padding-right: 4px; }
+  .note-row .sched-actions { opacity: 0.7; }
   .sched-act.del { color: #ff7a8a; }
   .sched-act.del:hover { background: rgba(255,122,138,0.14); }
   .sched-confirm { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; font-size: 0.72rem; color: #ffb3bd; font-weight: 600; }
@@ -1918,7 +1922,34 @@
       del.title = '이 노트 삭제';
       del.textContent = '✕';
       del.addEventListener('click', () => deleteNote(n.id));
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'note-del';
+      edit.title = '이 노트 수정';
+      edit.setAttribute('aria-label', '노트 수정');
+      edit.textContent = '✎';
+      edit.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'text'; input.value = n.content; input.maxLength = 200;
+        input.style.cssText = 'flex:1;min-width:0;background:rgba(8,18,28,0.9);border:1px solid rgba(63,224,255,0.3);border-radius:5px;color:#E4F7FF;padding:3px 6px;font-size:0.76rem;font-family:inherit;';
+        const save = document.createElement('button'); save.type = 'button'; save.className = 'note-del'; save.textContent = '저장'; save.style.color = '#6ee7a8';
+        const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'note-del'; cancel.textContent = '취소';
+        const doSave = async () => {
+          const content = input.value.trim();
+          if (!content) { showToast('error', 'NOTE', '내용을 입력하세요.'); return; }
+          try {
+            await schedRequest('PUT', '/api/notes/' + encodeURIComponent(n.id), { content });
+          } catch (err) { showToast('error', 'NOTE', err.message); return; }
+          refreshNotes();
+        };
+        save.addEventListener('click', doSave);
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSave(); if (e.key === 'Escape') refreshNotes(); });
+        cancel.addEventListener('click', refreshNotes);
+        row.replaceChildren(input, save, cancel);
+        input.focus();
+      });
       row.appendChild(text);
+      row.appendChild(edit);
       row.appendChild(del);
       noteList.appendChild(row);
     });
@@ -2054,6 +2085,51 @@
   let lastSchedules = null;  // null = 아직 조회 전
   let lastReminders = null;
   const REMINDER_ROWS = 4;
+  let remExpanded = false;
+  let remEditId = null;
+  let remConfirmId = null;
+  let remEditError = '';
+
+  async function reminderAction(kind, id, doneMsg) {
+    try {
+      if (kind === 'DELETE') await schedRequest('DELETE', '/api/reminders/' + id);
+      else await schedRequest('POST', '/api/reminders/' + id + '/complete');
+      remConfirmId = null;
+      showToast('success', 'REMINDER', doneMsg);
+    } catch (err) {
+      showToast('error', 'REMINDER', '처리하지 못했습니다: ' + err.message);
+    }
+    refreshReminders();
+  }
+
+  function makeReminderEditRow(r) {
+    const row = document.createElement('div'); row.className = 'rem-row';
+    const form = document.createElement('div'); form.className = 'sched-edit';
+    const mk = (labelText, type, value) => {
+      const l = document.createElement('label'); l.textContent = labelText;
+      const i = document.createElement('input'); i.type = type; i.value = value || ''; l.appendChild(i); form.appendChild(l); return i;
+    };
+    const iText = mk('CONTENT', 'text', r.content); iText.maxLength = 200;
+    const iAt = mk('REMIND AT', 'datetime-local', (r.remindAt || '').slice(0, 16));
+    if (remEditError) { const e = document.createElement('div'); e.className = 'err'; e.textContent = remEditError; form.appendChild(e); }
+    const btns = document.createElement('div'); btns.className = 'btns';
+    const save = document.createElement('button'); save.type = 'button'; save.className = 'sched-toggle'; save.style.marginTop = '0'; save.textContent = '저장';
+    save.addEventListener('click', async () => {
+      if (!iText.value.trim()) { remEditError = '내용을 입력하세요.'; renderDashboard(); return; }
+      if (!iAt.value) { remEditError = '알림 시각을 입력하세요.'; renderDashboard(); return; }
+      try {
+        await schedRequest('PUT', '/api/reminders/' + r.id, { content: iText.value.trim(), remindAt: iAt.value.length === 16 ? iAt.value + ':00' : iAt.value });
+        remEditId = null; remEditError = '';
+        showToast('success', 'REMINDER', '리마인더를 수정했습니다');
+        refreshReminders();
+      } catch (err) { remEditError = err.message; renderDashboard(); }
+    });
+    const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'sched-toggle'; cancel.style.marginTop = '0'; cancel.textContent = '취소';
+    cancel.addEventListener('click', () => { remEditId = null; remEditError = ''; renderDashboard(); });
+    btns.appendChild(save); btns.appendChild(cancel); form.appendChild(btns); row.appendChild(form);
+    return row;
+  }
+
 
   function dayKey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
 
@@ -2115,15 +2191,34 @@
       if (!lastReminders.length) {
         const e = document.createElement('div'); e.className = 'mood-empty'; e.style.marginTop = '0'; e.textContent = '"내일 9시에 알려줘"라고 말하면 여기에 쌓여요'; remList.appendChild(e);
       }
-      lastReminders.slice(0, REMINDER_ROWS).forEach((r) => {
+      remList.classList.toggle('expanded', remExpanded);
+      const shown = remExpanded ? lastReminders : lastReminders.slice(0, REMINDER_ROWS);
+      shown.forEach((r) => {
+        if (remEditId === r.id) { remList.appendChild(makeReminderEditRow(r)); return; }
         const row = document.createElement('div'); row.className = 'rem-row';
         const when = document.createElement('span'); when.className = 'rem-when'; when.textContent = reminderWhen(new Date(r.remindAt), now);
-        const text = document.createElement('span'); text.className = 'rem-text'; text.textContent = r.content;
-        row.appendChild(when); row.appendChild(text); remList.appendChild(row);
+        const box = document.createElement('div'); box.style.flex = '1';
+        const text = document.createElement('div'); text.className = 'rem-text'; text.textContent = r.content;
+        box.appendChild(text);
+        if (remConfirmId === r.id) {
+          const c = document.createElement('div'); c.className = 'sched-confirm';
+          const q = document.createElement('span'); q.textContent = '삭제할까요?'; c.appendChild(q);
+          const ok = document.createElement('button'); ok.type = 'button'; ok.textContent = '삭제'; ok.addEventListener('click', () => reminderAction('DELETE', r.id, '리마인더를 삭제했습니다'));
+          const no = document.createElement('button'); no.type = 'button'; no.className = 'ghost'; no.textContent = '취소'; no.addEventListener('click', () => { remConfirmId = null; renderDashboard(); });
+          c.appendChild(ok); c.appendChild(no); box.appendChild(c);
+        }
+        const acts = document.createElement('div'); acts.className = 'sched-actions';
+        const mkAct = (cls, label, title, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sched-act ' + cls; b.title = title; b.setAttribute('aria-label', title); b.textContent = label; b.addEventListener('click', fn); acts.appendChild(b); };
+        mkAct('ok', '✔', '완료', () => reminderAction('COMPLETE', r.id, '완료 처리했습니다'));
+        mkAct('', '✎', '수정', () => { remEditId = r.id; remConfirmId = null; remEditError = ''; renderDashboard(); });
+        mkAct('del', '✕', '삭제', () => { remConfirmId = r.id; remEditId = null; renderDashboard(); });
+        row.appendChild(when); row.appendChild(box); row.appendChild(acts); remList.appendChild(row);
       });
       if (lastReminders.length > REMINDER_ROWS) {
-        const more = document.createElement('div'); more.className = 'mood-empty'; more.style.marginTop = '6px';
-        more.textContent = '외 ' + (lastReminders.length - REMINDER_ROWS) + '건'; remList.appendChild(more);
+        const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'sched-toggle';
+        btn.textContent = remExpanded ? '접기 ▴' : '전체 ' + lastReminders.length + '건 펼치기 ▾';
+        btn.addEventListener('click', () => { remExpanded = !remExpanded; renderDashboard(); });
+        remList.appendChild(btn);
       }
     }
 

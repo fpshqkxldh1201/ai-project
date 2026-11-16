@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,6 +36,15 @@ public class NoteController {
     @PostMapping
     public ResponseEntity<?> add(@Valid @RequestBody NoteRequest request) {
         KnowledgeNoteService.AddResult result = noteService.add(request.content(), "ui");
+        if (!result.ok()) {
+            return ResponseEntity.badRequest().body(Map.of("error", result.error()));
+        }
+        return ResponseEntity.ok(NoteResponse.from(result.note()));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody NoteRequest request) {
+        KnowledgeNoteService.AddResult result = noteService.update(id, request.content());
         if (!result.ok()) {
             return ResponseEntity.badRequest().body(Map.of("error", result.error()));
         }

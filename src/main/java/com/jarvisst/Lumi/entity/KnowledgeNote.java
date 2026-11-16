@@ -47,6 +47,10 @@ public class KnowledgeNote {
         this.createdAt = LocalDateTime.now();
     }
 
+    public void updateContent(String content) {
+        this.content = content;
+    }
+
     public Long getId() {
         return id;
     }

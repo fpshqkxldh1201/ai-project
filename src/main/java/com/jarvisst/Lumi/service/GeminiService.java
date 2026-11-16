@@ -128,6 +128,9 @@ public class GeminiService {
               사용자가 바꾸거나 지워 달라고 직접 말했을 때만 호출하고, 어느 일정인지 애매하면 짧게 되묻습니다.
               여러 개를 지울 때는 "삭제했어요"라고 말하기 전에 응답의 deleted 개수를 확인해 그대로 알려줍니다.
               같은 제목의 반복 일정을 모두 지우라고 한 경우에만 deleteAllUpcoming=true를 씁니다.
+            - 리마인더 수정·삭제·완료는 get_reminders로 id를 확인한 뒤 update_reminder, delete_reminder,
+              complete_reminder를 사용합니다. 사용자가 직접 바꾸거나 지우거나 끝냈다고 말했을 때만 호출하고,
+              어느 리마인더인지 애매하면 짧게 되묻습니다. 처리했다고 말하기 전에 응답을 확인합니다.
             - 리마인더 등록/조회는 반드시 get_reminders, add_reminder 함수를 사용하고,
               일정(약속·회의)과 리마인더(짧은 할 일 알림)를 혼동하지 않습니다.
             - 최신 뉴스, 가격, 사실 확인 등 학습 데이터만으로 확신할 수 없는 정보는
@@ -261,6 +264,42 @@ public class GeminiService {
                                             "description", "알림 시각, ISO-8601 형식 (예: 2026-09-20T09:00:00)")
                             ),
                             "required", List.of("content", "remindAt")
+                    )
+            ),
+            new GeminiFunctionDeclaration(
+                    "update_reminder",
+                    "이미 등록된 리마인더의 내용이나 알림 시각을 수정합니다. 먼저 get_reminders로 id를 확인한 뒤, " +
+                            "사용자가 바꾸거나 옮겨 달라고 직접 말했을 때만 사용하세요. 바꾸지 않을 항목은 생략합니다.",
+                    Map.of(
+                            "type", "OBJECT",
+                            "properties", Map.of(
+                                    "id", Map.of("type", "INTEGER", "description", "수정할 리마인더 id (get_reminders 결과의 id)"),
+                                    "content", Map.of("type", "STRING", "description", "새 내용 (선택)"),
+                                    "remindAt", Map.of("type", "STRING", "description", "새 알림 시각, ISO-8601 (선택)")
+                            ),
+                            "required", List.of("id")
+                    )
+            ),
+            new GeminiFunctionDeclaration(
+                    "delete_reminder",
+                    "리마인더를 삭제합니다. 먼저 get_reminders로 id를 확인한 뒤, 사용자가 지우거나 취소해 달라고 직접 말했을 때만 사용하세요.",
+                    Map.of(
+                            "type", "OBJECT",
+                            "properties", Map.of(
+                                    "id", Map.of("type", "INTEGER", "description", "삭제할 리마인더 id")
+                            ),
+                            "required", List.of("id")
+                    )
+            ),
+            new GeminiFunctionDeclaration(
+                    "complete_reminder",
+                    "리마인더를 완료 처리합니다(목록에서 사라짐). 사용자가 그 일을 끝냈다고 직접 말했을 때만 사용하세요.",
+                    Map.of(
+                            "type", "OBJECT",
+                            "properties", Map.of(
+                                    "id", Map.of("type", "INTEGER", "description", "완료할 리마인더 id")
+                            ),
+                            "required", List.of("id")
                     )
             ),
             new GeminiFunctionDeclaration(
@@ -1003,16 +1042,19 @@ public class GeminiService {
     }
 
     /** 사용자의 "이번 발화"에 기억/삭제 의도가 있었는지 — 외부 글에 속은 모델이 노트를 마음대로 바꾸지 못하게 하는 확인용. */
-    private record NoteIntent(boolean save, boolean delete, boolean scheduleEdit, boolean scheduleDelete) {
+    private record NoteIntent(boolean save, boolean delete, boolean scheduleEdit, boolean scheduleDelete,
+                              boolean reminderEdit, boolean reminderDelete, boolean reminderComplete) {
         NoteIntent(boolean save, boolean delete) {
-            this(save, delete, false, false);
+            this(save, delete, false, false, false, false, false);
         }
 
         static NoteIntent of(String message, boolean greetingTrigger) {
+            boolean edit = !greetingTrigger && ScheduleService.hasEditIntent(message);
+            boolean del = !greetingTrigger && ScheduleService.hasDeleteIntent(message);
             return new NoteIntent(!greetingTrigger && KnowledgeNoteService.hasSaveIntent(message),
                     !greetingTrigger && KnowledgeNoteService.hasDeleteIntent(message),
-                    !greetingTrigger && ScheduleService.hasEditIntent(message),
-                    !greetingTrigger && ScheduleService.hasDeleteIntent(message));
+                    edit, del, edit, del,
+                    !greetingTrigger && ReminderService.hasCompleteIntent(message));
         }
     }
 
@@ -1026,6 +1068,9 @@ public class GeminiService {
             case "delete_schedule" -> handleDeleteSchedule(args, noteIntent);
             case "get_reminders" -> handleGetReminders();
             case "add_reminder" -> handleAddReminder(args);
+            case "update_reminder" -> handleUpdateReminder(args, noteIntent);
+            case "delete_reminder" -> handleDeleteReminder(args, noteIntent);
+            case "complete_reminder" -> handleCompleteReminder(args, noteIntent);
             case "save_note" -> handleSaveNote(args, noteIntent);
             case "delete_note" -> handleDeleteNote(args, noteIntent);
             case "web_search" -> handleWebSearch(args, evidence);
@@ -1259,6 +1304,66 @@ public class GeminiService {
         response.put("content", saved.getContent());
         response.put("remindAt", saved.getRemindAt().toString());
         return response;
+    }
+
+    private Map<String, Object> handleUpdateReminder(Map<String, Object> args, NoteIntent intent) {
+        if (!intent.reminderEdit()) {
+            log.warn("[보안] 사용자 요청 없이 update_reminder 호출 시도를 거절");
+            return Map.of("error", "사용자가 리마인더를 바꾸거나 옮겨 달라고 직접 말했을 때만 수정할 수 있습니다.");
+        }
+        if (!(args.get("id") instanceof Number n)) {
+            return Map.of("error", "수정할 리마인더 id가 필요합니다. get_reminders로 먼저 확인하세요.");
+        }
+        Optional<Reminder> found = reminderService.find(n.longValue());
+        if (found.isEmpty()) {
+            return Map.of("updated", false, "error", "해당 리마인더를 찾지 못했습니다. get_reminders로 id를 다시 확인하세요.");
+        }
+        Reminder old = found.get();
+        String content = args.get("content") == null ? old.getContent()
+                : inputSanitizer.cleanForStorage(inputSanitizer.asString(args.get("content")), 200);
+        if (content == null || content.isBlank()) {
+            return Map.of("error", "내용이 비어 있습니다.");
+        }
+        LocalDateTime at = old.getRemindAt();
+        if (args.get("remindAt") != null) {
+            at = parseDateTime(inputSanitizer.asString(args.get("remindAt")));
+            if (at == null) {
+                return Map.of("error", "remindAt은 ISO-8601 형식이어야 합니다.");
+            }
+            if (!isReasonableTime(at)) {
+                return Map.of("error", "알림 시각이 올바른 범위(과거 1년 ~ 향후 5년)가 아닙니다.");
+            }
+        }
+        return reminderService.update(old.getId(), content, at)
+                .<Map<String, Object>>map(r -> Map.of("updated", true, "id", r.getId(),
+                        "content", r.getContent(), "remindAt", r.getRemindAt().toString()))
+                .orElse(Map.of("updated", false, "error", "해당 리마인더를 찾지 못했습니다."));
+    }
+
+    private Map<String, Object> handleDeleteReminder(Map<String, Object> args, NoteIntent intent) {
+        if (!intent.reminderDelete()) {
+            log.warn("[보안] 사용자 요청 없이 delete_reminder 호출 시도를 거절");
+            return Map.of("error", "사용자가 리마인더를 지우거나 취소해 달라고 직접 말했을 때만 삭제할 수 있습니다.");
+        }
+        if (!(args.get("id") instanceof Number n)) {
+            return Map.of("error", "삭제할 리마인더 id가 필요합니다. get_reminders로 먼저 확인하세요.");
+        }
+        return reminderService.delete(n.longValue())
+                ? Map.of("deleted", 1)
+                : Map.of("deleted", 0, "error", "해당 리마인더를 찾지 못했습니다.");
+    }
+
+    private Map<String, Object> handleCompleteReminder(Map<String, Object> args, NoteIntent intent) {
+        if (!intent.reminderComplete()) {
+            log.warn("[보안] 사용자 요청 없이 complete_reminder 호출 시도를 거절");
+            return Map.of("error", "사용자가 그 일을 끝냈다고 직접 말했을 때만 완료 처리할 수 있습니다.");
+        }
+        if (!(args.get("id") instanceof Number n)) {
+            return Map.of("error", "완료할 리마인더 id가 필요합니다. get_reminders로 먼저 확인하세요.");
+        }
+        return reminderService.complete(n.longValue())
+                ? Map.of("completed", 1)
+                : Map.of("completed", 0, "error", "해당 리마인더를 찾지 못했습니다.");
     }
 
     private Map<String, Object> handleSaveNote(Map<String, Object> args, NoteIntent intent) {

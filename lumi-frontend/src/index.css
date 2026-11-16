@@ -105,6 +105,9 @@
   .sched-row:hover .sched-actions, .sched-row:focus-within .sched-actions { opacity: 1; }
   .sched-act { background: transparent; border: 0; color: rgba(63,224,255,0.85); cursor: pointer; font-size: 0.82rem; line-height: 1; padding: 3px 5px; border-radius: 4px; font-family: inherit; }
   .sched-act:hover { background: rgba(63,224,255,0.12); }
+  .sched-act.ok { color: #6ee7a8; }
+  .sched-act.ok:hover { background: rgba(110,231,168,0.14); }
+  .rem-list.expanded { max-height: 240px; overflow-y: auto; padding-right: 4px; }
   .sched-act.del { color: #ff7a8a; }
   .sched-act.del:hover { background: rgba(255,122,138,0.14); }
   .sched-confirm { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; font-size: 0.72rem; color: #ffb3bd; font-weight: 600; }

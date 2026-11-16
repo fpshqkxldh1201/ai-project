@@ -678,6 +678,47 @@ export function LumiProvider({ children }) {
     }
   }
 
+  // 노트 수정: 서버가 저장과 같은 검사를 하므로 실패 사유를 문자열로 돌려준다(성공이면 null)
+  async function updateNote(id, content) {
+    try {
+      await scheduleRequest('PUT', '/api/notes/' + encodeURIComponent(id), { content })
+      await refreshNotes()
+      return null
+    } catch (err) {
+      return err.message
+    }
+  }
+
+  // 리마인더 수정·완료·삭제(서버가 본인 것만 허용)
+  async function updateReminder(id, { content, remindAt }) {
+    try {
+      await scheduleRequest('PUT', '/api/reminders/' + id, { content, remindAt })
+      showToast('success', 'REMINDER', '리마인더를 수정했습니다')
+      await refreshReminders()
+      return null
+    } catch (err) {
+      return err.message
+    }
+  }
+  async function completeReminder(id) {
+    try {
+      await scheduleRequest('POST', '/api/reminders/' + id + '/complete')
+      showToast('success', 'REMINDER', '완료 처리했습니다')
+    } catch (err) {
+      showToast('error', 'REMINDER', '처리하지 못했습니다: ' + err.message)
+    }
+    await refreshReminders()
+  }
+  async function deleteReminder(id) {
+    try {
+      await scheduleRequest('DELETE', '/api/reminders/' + id)
+      showToast('success', 'REMINDER', '리마인더를 삭제했습니다')
+    } catch (err) {
+      showToast('error', 'REMINDER', '삭제하지 못했습니다: ' + err.message)
+    }
+    await refreshReminders()
+  }
+
   async function deleteNote(id) {
     try {
       const res = await fetch('/api/notes/' + encodeURIComponent(id), {
@@ -1057,7 +1098,7 @@ export function LumiProvider({ children }) {
     moodDays, refreshMood, clearMoodLog,
     secStatus, refreshSecurity,
     reminders, refreshReminders,
-    notes, addNote, deleteNote, clearNotes,
+    notes, addNote, deleteNote, clearNotes, updateNote, updateReminder, completeReminder, deleteReminder,
   }
 
   return <LumiContext.Provider value={value}>{children}</LumiContext.Provider>

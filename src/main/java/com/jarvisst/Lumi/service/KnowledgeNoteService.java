@@ -108,6 +108,39 @@ public class KnowledgeNoteService {
         return new AddResult(repository.save(new KnowledgeNote(owner, content, source)), null);
     }
 
+    /**
+     * 노트 내용을 고친다. 저장(add)과 같은 검사(제어문자·길이, 지시문, 민감정보, 중복)를 그대로 거친다 —
+     * 고치는 경로가 "나중에 인젝션을 심는 우회로"가 되지 않게 한다. 없거나 남의 노트면 "노트를 찾을 수 없어요".
+     */
+    @Transactional
+    public AddResult update(Long id, String raw) {
+        User owner = currentUserProvider.requireCurrentUser();
+        KnowledgeNote note = repository.findByIdAndOwner(id, owner).orElse(null);
+        if (note == null) {
+            return new AddResult(null, "노트를 찾을 수 없어요.");
+        }
+        String content = inputSanitizer.sanitizeExternalText(raw, MAX_LENGTH);
+        if (content.isBlank()) {
+            return new AddResult(null, "기억할 내용을 입력해주세요.");
+        }
+        String injection = inputSanitizer.detectInjection(content);
+        if (injection != null) {
+            securityEvents.record(SecurityEvent.Type.NOTE_REJECTED, "노트 수정 거절: 지시문 의심(" + injection + ")");
+            return new AddResult(null, "지시문처럼 보이는 내용은 노트로 저장할 수 없어요.");
+        }
+        if (masker.mask(content).masked() > 0) {
+            securityEvents.record(SecurityEvent.Type.NOTE_REJECTED, "노트 수정 거절: 민감정보 포함");
+            return new AddResult(null, "주민번호·카드번호·비밀 키가 들어 있어서 저장하지 않았어요.");
+        }
+        boolean duplicate = repository.findByOwnerOrderByCreatedAtAsc(owner).stream()
+                .anyMatch(n -> !n.getId().equals(id) && n.getContent().equalsIgnoreCase(content));
+        if (duplicate) {
+            return new AddResult(null, "이미 같은 내용이 저장되어 있어요.");
+        }
+        note.updateContent(content);
+        return new AddResult(repository.save(note), null);
+    }
+
     @Transactional
     public boolean delete(Long id) {
         User owner = currentUserProvider.requireCurrentUser();
