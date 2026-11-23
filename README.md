@@ -39,7 +39,7 @@ flowchart LR
     Svc --> DB[("MySQL")]
     Svc --> Gemini["Gemini API"]
     Svc --> Fallback["OpenAI · xAI Grok<br/>(Gemini 장애 시 예비)"]
-    Svc --> Cls["분류 서버<br/>(의도·감정·속뜻, 직접 학습, FastAPI 8002)"]
+    Svc --> Cls["분류 서버<br/>(multilingual-e5-small 기반 직접 학습 모델,<br/>의도 분류 · 감정 분류(KOTE) · 속뜻 분류, FastAPI 8002)"]
     Svc --> Search["NAVER · Google · YouTube · Open-Meteo"]
     Svc --> Tts["Fish Audio TTS"]
 ```
